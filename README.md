@@ -1,1 +1,15 @@
 # CS-3891-Final-Project
+
+## Data Information
+Data is now slimmed down to 1995 to 2015 with the following variables:
+
+**Player_Id** Unique ID for every player (integer)
+**Player** Player Name (String)
+**Year** Year drafted (Integer)
+**Round** Round selected (Integer)
+**Pick** Overall Pick selected (Integer)
+**Position** Position of 7 categories: QB, RB, WR/TE, DL/LB, DB, OL, Other
+**Seasons** Number of Seasons as a starter
+**ProBowls** Nuber of Pro Bowl Nominations
+**First4AV** AV for the first 4 years of a players career
+**CareerAV** AV for a players career
