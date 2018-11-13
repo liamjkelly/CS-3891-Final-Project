@@ -2,11 +2,17 @@
 <html lang='en'>
 	<head>
 		<meta charset='utf-8'>
-		<title>Assignment 5 - Treemaps</title>
-		<script type='text/javascript' src='../d3.js'></script>
+		<title>How NFL Draft Position Relates to NFL Success</title>
+		<script type='text/javascript' src='d3.js'></script>
 	</head>
-	<body>
-		<script>
-		</script>
+	<body>	
+	<script type='text/javascript' src='draft_visualization.js'></script>
+	<script type='text/javascript'>
+	d3.csv('DraftData.csv')
+	  .then(function(data)  {
+		  nfl_data = data;
+		  plot_it();
+	  })
+	</script>
 	</body>
 </html>	
