@@ -17,4 +17,41 @@ function plot_it() {
 		.attr('transform', 'translate(0,'+(actual_height*(2/3)+20)+')');
 	d3.select('.mainview').append('g').attr('class', 'options')
 		.attr('transform', 'translate('+(actual_width/3)+','+(actual_height*(2/7))+')');
+    
+    console.log(nfl_data);
+    
+    var minX = 0;
+    var maxX = 257;
+    var minY = Math.min.apply(Math, nfl_data.map(function(d) {return d.CareerAV; }));
+    var maxY = Math.max.apply(Math, nfl_data.map(function(d) {return d.CareerAV; }));
+    
+    console.log(nfl_data.Pick);
+    
+    var xVal = function(d) {return d.Pick;};
+    var yVal = function(d) {return d.CareerAV;};
+    var xScale = d3.scaleLinear().domain([minX, maxX]).range([0, actual_width/3]);
+    var yScale = d3.scaleLinear().domain([minY, maxY]).range([actual_height * (2/3), 0]);
+    var xMap = function(d) {return xScale(xVal(d));};
+    var yMap = function(d) {return yScale(yVal(d));};
+    
+/*
+    d3.select('.mainview').append('g').attr('key', '.y_axis').attr('transform', 'translate(80,0)').call(d3.axisLeft(yScale));
+    d3.select('.mainview').append('g').attr('key', '.x_axis').attr('transform', 'translate(0,' + 720  +')').call(d3.axisBottom(xScale));
+    d3.select('.mainview').append('g').attr('key', 'points').selectAll('points').data(nfl_data).enter().append('circle').attr('class', 'points').attr('r', 4).attr('cx', xMap).attr('cy', yMap).attr('fill', 'green').style('opacity', .2);
+    */
+    d3.select('.mainplot').append('g').attr('key', '.y_axis').call(d3.axisLeft(yScale));
+    d3.select('.mainplot').append('g').attr('key','.x_axis').attr('transform', 'translate(0,' + 426  +')').call(d3.axisBottom(xScale));
+d3.select('.mainplot').append('g').attr('key','points').selectAll('points').data(nfl_data).enter().append('circle').attr('class', 'points').attr('r', 4).attr('cx', xMap).attr('cy', yMap).attr('fill', 'green').style('opacity', .2);
+    
+    d3.select('.mainplot').append("text")
+    .attr("transform", "rotate(-90)")
+    .attr('y', -50 )
+    .attr('x', -220)
+    .attr('dy', "1em")
+    .style("text-anchor", "middle")
+    .text("Career Average");
+    
+    d3.select('.mainplot').append('text').attr('x', actual_width/6).attr('y', actual_height * (5/7)).style("text-anchor", "middle").text('Pick');
+    //d3.select('.x_axis').append('g').append("text").attr("transform","translate(" + (width/2) + " ," +(height - pad/2) + ")").text('Pick');
+    
 }
