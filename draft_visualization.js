@@ -16,8 +16,14 @@ function plot_it() {
 	d3.select('.mainview').append('g').attr('class', 'brush')
 		.attr('transform', 'translate(0,'+(actual_height*(2/3)+20)+')');
 	d3.select('.mainview').append('g').attr('class', 'options')
-		.attr('transform', 'translate('+(actual_width/3)+','+(actual_height*(2/7))+')');
-    
+		.attr('transform', 'translate('+(actual_width/3+10)+','+(actual_height*(2/7))+')');
+    d3.select('.options').append('rect').attr('id', 'optionsbox')
+    	.attr('width', (actual_width/7))
+    	.attr('height', (actual_height*(3/8)))
+    	.attr('fill', 'none')
+    	.attr('stroke-width', 2)
+    	.attr('stroke', '#000000');
+
     console.log(nfl_data);
     
     var minX = 0;
