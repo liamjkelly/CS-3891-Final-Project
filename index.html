@@ -6,11 +6,12 @@
 		<script type='text/javascript' src='d3.js'></script>
 	</head>
 	<body>	
-	<script type='text/javascript' src='draft_visualization.js'></script>
+	<script type='text/javascript' src='draft_visualization.js?4'></script>
 	<script type='text/javascript'>
-	d3.csv('DraftData.csv')
+	d3.csv('draft.csv')
 	  .then(function(data)  {
-		  nfl_data = data;
+		  nfl_data = data
+		  data.forEach(filter_data)
 		  plot_it();
 	  })
 	</script>
