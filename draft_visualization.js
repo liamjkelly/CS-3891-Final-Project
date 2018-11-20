@@ -1,5 +1,5 @@
-var width = 1200, height = 800;
-var x_pad = 50, y_pad = 20;
+var width = 1300, height = 800;
+var x_pad = 60, y_pad = 20;
 var actual_width = width-2*x_pad, actual_height = height-2*y_pad
 var main_width = actual_width*(3/4), main_height = actual_height*(2/3)
 
@@ -39,7 +39,7 @@ function plot_it() {
 	d3.select('.mainview').append('g').attr('class', 'brush')
 		.attr('transform', 'translate(0,'+(main_height+20)+')');
 	d3.select('.mainview').append('g').attr('class', 'options')
-		.attr('transform', 'translate('+(main_width+10)+','+(actual_height*(2/7))+')');
+		.attr('transform', 'translate('+(main_width+10)+','+(actual_height*(1.5/7))+')');
 	
 	// Set up Scales
     var minX = d3.min(nfl_data, d => d.pick)
@@ -73,30 +73,46 @@ function plot_it() {
 	// Plot the Text
     d3.select('.mainplot').append("text")
 		.attr("transform", "rotate(-90)")
-		.attr('y', -50)
+		.attr('y', -35)
 		.attr('x', -main_height/2)
-		.attr('dy', "1em")
 		.style("text-anchor", "middle")
+		.style('font-size', '18px')
+		.attr('font-weight', 'bold')
+		.attr('font-family', 'sans-serif')
 		.text("Career Average")
     
     d3.select('.mainplot').append('text')
 		.attr('x', main_width/2)
-		.attr('y', main_height+40)
+		.attr('y', main_height+30)
 		.style("text-anchor", "middle")
-		.text('Pick')
+		.style('alignment-baseline', 'central')
+		.attr('font-family', 'arial')
+		.attr('font-size', '18px')
+		.attr('font-weight', 'bold')
+		.text('Overall Pick')
+
 	
 	set_up_options()
+	
+	// TODO set up interactions
+	// Actives 
+	d3.selectAll('.position_buttons').on('click', position_change)
+	
+	d3.selectAll('.stat_buttons').on('click', stat_change)
+	
 }
+
 
 // Sets up all of the svg related things to the options box
 function set_up_options() {
 	var option_width = actual_width - main_width
-	var option_height = main_height - actual_height*(2/7)
+	var option_height = main_height - actual_height*(1.5/7)
 	
 	// Set up options data
 	var positions = nfl_data.map(d => d.position).filter((v, i, a) => a.indexOf(v) === i)
+	positions.unshift('All')
 	var graph_stat = ['career_av', 'first4_av', 'probowls', 'seasons']
-	var graph_style = ['Scatter Plot', 'Bar Graph']
+	var graph_style = ['scatter_plot', 'bar_graph']
 	option_box = [positions, graph_stat, graph_style]
 	
 	// Append box to the outside
@@ -153,7 +169,7 @@ function set_up_options() {
 	// POSITION BUTTONS
 	
 	// Adjust scales
-	var band_x = d3.scaleBand().domain(positions.slice(0,4))
+	var band_x = d3.scaleBand().domain([0,1,2,3])
 		.range([0, option_width])
 		.paddingInner([.1])
 		.paddingOuter([.1])
@@ -164,20 +180,11 @@ function set_up_options() {
 		
 	// Set up buttons
 	d3.select('.options_position').selectAll('boxes')
-		.data(d => d.slice(0,4)).enter().append('g')
+		.data(d => d).enter().append('g')
 		.attr('class', 'position_buttons')
-		.attr('transform', (d) => 'translate('+band_x(d)+','+band_y(0)+')')
-	
-	band_x.domain(positions.slice(4,7))
-		.paddingOuter([.6])
-	
-	d3.select('.options_position').selectAll('boxes')
-		.data(d => d.slice(4,7)).enter().append('g')
-		.attr('class', 'position_buttons')
-		.attr('transform', (d) => 'translate('+band_x(d)+','+band_y(1)+')')
-	 
-	// Set up buttons
-	d3.selectAll('.position_buttons').append('rect')
+		.attr('id', d => d+'_button')
+		.attr('transform', (d,i) => 'translate('+band_x(i % 4)+','+band_y(Math.floor(i/4))+')')
+	  .append('rect')
 		.attr('x', 0)
 		.attr('y', 0)
 		.attr('width', band_x.bandwidth())
@@ -187,7 +194,7 @@ function set_up_options() {
 		.style('stroke-width', 1.5)
 
 	// Text in buttons
-	var button_names = ['QB', 'DL/LB', 'WR/TE', 'OL', 'RB', 'DB', 'Other']
+	var button_names = ['All', 'QB', 'DL/LB', 'WR/TE', 'OL', 'RB', 'DB', 'Other']
 	d3.selectAll('.position_buttons').append('text')
 		.text((d,i) => button_names[i])
 		.attr('x', band_x.bandwidth()/2)
@@ -208,6 +215,7 @@ function set_up_options() {
 	d3.select('.options_stat').selectAll('boxes')
 		.data(d => d).enter().append('g')
 		.attr('class', 'stat_buttons')
+		.attr('id', d => d+'_button')
 		.attr('transform', (d,i) => 'translate('+band_x(i % 2)+','+band_y(Math.floor(i/2))+')')
 	  .append('rect')
 		.attr('x', 0)
@@ -219,7 +227,7 @@ function set_up_options() {
 		.style('stroke-width', 1.5)
 		
 	// Text in buttons
-	var button_names = ['Career Value', 'First4 Value', 'Pro Bowls', 'Start Seasons']
+	button_names = ['Career Value', 'First4 Value', 'Pro Bowls', 'Start Seasons']
 	d3.selectAll('.stat_buttons').append('text')
 		.text((d,i) => button_names[i])
 		.attr('x', band_x.bandwidth()/2)
@@ -240,6 +248,7 @@ function set_up_options() {
 	d3.select('.options_style').selectAll('boxes')
 		.data(d => d).enter().append('g')
 		.attr('class', 'style_buttons')
+		.attr('id', d => d+'_button')
 		.attr('transform', d => 'translate('+band_x(d)+',30)')
 	  .append('rect')
 		.attr('x', 0)
@@ -251,6 +260,7 @@ function set_up_options() {
 		.style('stroke-width', 1.5)
 	
 	// Text in buttons
+	button_names = ['Scatter Plot', 'Bar Graph']
 	d3.selectAll('.style_buttons').append('text')
 		.text(d => d)
 		.attr('x', band_x.bandwidth()/2)
@@ -258,13 +268,34 @@ function set_up_options() {
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'sans-serif')
+	
+	// Set up initial state of the buttons - button fill is dark grey
+	d3.select('#All_button').select('rect').attr('fill', '#999999')
+	d3.select('#career_av_button').select('rect').attr('fill', '#999999')
+	d3.select('#scatter_plot_button').select('rect').attr('fill', '#999999')
+	
 }
 
 
+// Does the changing of position data and revisualizing
+// Possibly new data (merge), same coordinates/scale
+// Some kind of fade out/in transition
+// Might help to make a helper function that visualizes everything
+// and then call that function with new data to visualize
+// Key quickly on position
+// Highlight new pressed button, unhighlight old button
+function position_change(d,i,g) {
+	
+}
 
 
-
-
+// Changes the y statistic and axis scale
+// Same points different y coordinate, y axis, y axis-label
+// Some kind of cool transition
+// Highlight new pressed button, unhighlight old button
+function stat_change(d,i,g) {
+	
+}
 
 
 
