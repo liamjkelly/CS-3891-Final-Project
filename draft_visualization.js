@@ -8,6 +8,7 @@ var scheme = d3.schemeCategory10
 var color_array = {QB: scheme[0], RB: scheme[2], WR_TE: scheme[1], OL: scheme[8],
 				   DB: scheme[4], DL_LB: scheme[3], Other: scheme[6]}
 var option_box
+var trans = d3.transition().duration(1000)
 
 // FIXME (JOE): This is super temporary I did this on an airplane, has to be
 // a way to get it to read in the data as integers instead of strings. Causing
@@ -40,7 +41,7 @@ function plot_it() {
 		.attr('transform', 'translate(0,'+(main_height+20)+')');
 	d3.select('.mainview').append('g').attr('class', 'options')
 		.attr('transform', 'translate('+(main_width+10)+','+(actual_height*(1.5/7))+')');
-	
+
 	// Set up Scales
     var minX = d3.min(nfl_data, d => d.pick)
     var maxX = d3.max(nfl_data, d => d.pick)
@@ -61,7 +62,7 @@ function plot_it() {
 		
 	// Plot the Plots
 	d3.select('.mainplot').append('g').attr('class','point_group')
-	  .selectAll('points').data(nfl_data)
+		.selectAll('points').data(nfl_data, d => d.position)
 		.enter().append('circle')
 		.attr('class', 'points')
 		.attr('r', 3)
@@ -287,8 +288,40 @@ function position_change(d,i,g) {
 	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', 'white')
 	
 	d3.select(this).select('rect').attr('fill', '#999999')
+
+	var i = 0
+	var id = d3.select(this).attr('id')
+	var pos = id.slice(0, -7)
+	if (pos === "All") {
+		new_data = nfl_data
+	}
+	else {
+		function position_filter(elem) {
+			if (elem.position === pos) {
+				return elem
+			}
+		}
+		new_data = nfl_data.filter(position_filter)
+	}
+	console.log(new_data)
+	visualize(new_data)	
 }
 
+// visualize new data set
+function visualize(new_data) {
+	var points = d3.select('.mainplot').select('.point_group')
+		.selectAll('circle').data(new_data, d => d.position)
+
+	points.exit().transition(trans).style('opacity', 0).remove()
+	points.enter().append('circle')
+		.attr('class', 'points')
+		.attr('r', 3)
+		.attr('cx', d => xScale(d.pick))
+		.attr('cy', d => yScale(d.career_av))
+		.attr('fill', d => color_array[d.position])
+		.transition(trans)
+		.style('opacity', .5)
+}
 
 // Changes the y statistic and axis scale
 // Same points different y coordinate, y axis, y axis-label
