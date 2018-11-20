@@ -262,7 +262,7 @@ function set_up_options() {
 	// Text in buttons
 	button_names = ['Scatter Plot', 'Bar Graph']
 	d3.selectAll('.style_buttons').append('text')
-		.text(d => d)
+		.text((d,i) => button_names[i])
 		.attr('x', band_x.bandwidth()/2)
 		.attr('y', (((1/4)*option_height)-40)/2)
 		.style('text-anchor', 'middle')
@@ -273,7 +273,6 @@ function set_up_options() {
 	d3.select('#All_button').select('rect').attr('fill', '#999999')
 	d3.select('#career_av_button').select('rect').attr('fill', '#999999')
 	d3.select('#scatter_plot_button').select('rect').attr('fill', '#999999')
-	
 }
 
 
