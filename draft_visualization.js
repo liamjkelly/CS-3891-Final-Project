@@ -284,7 +284,9 @@ function set_up_options() {
 // Key quickly on position
 // Highlight new pressed button, unhighlight old button
 function position_change(d,i,g) {
+	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', 'white')
 	
+	d3.select(this).select('rect').attr('fill', '#999999')
 }
 
 
@@ -293,7 +295,9 @@ function position_change(d,i,g) {
 // Some kind of cool transition
 // Highlight new pressed button, unhighlight old button
 function stat_change(d,i,g) {
+	d3.selectAll('.stat_buttons').selectAll('rect').attr('fill', 'white')
 	
+	d3.select(this).select('rect').attr('fill', '#999999')
 }
 
 
