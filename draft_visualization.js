@@ -10,6 +10,7 @@ var color_array = {QB: scheme[0], RB: scheme[2], WR_TE: scheme[1], OL: scheme[8]
 var option_box
 var trans = d3.transition().duration(1000)
 
+var brushing, date1, date2, min_year, max_year, handle, handle1, handle2, x_date
 // FIXME (JOE): This is super temporary I did this on an airplane, has to be
 // a way to get it to read in the data as integers instead of strings. Causing
 // problems with our data
@@ -38,7 +39,8 @@ function plot_it() {
 	d3.select('.mainview').append('g').attr('class', 'legend')
 		.attr('transform', 'translate('+(main_width+10)+',0)');
 	d3.select('.mainview').append('g').attr('class', 'brush')
-		.attr('transform', 'translate(0,'+(main_height+20)+')');
+	//.attr('transform', 'translate(0,'+(main_height+20)+')');
+		.attr('transform', 'translate(0,'+(main_height+50)+')');
 	d3.select('.mainview').append('g').attr('class', 'options')
 		.attr('transform', 'translate('+(main_width+10)+','+(actual_height*(1.5/7))+')');
 
@@ -47,6 +49,12 @@ function plot_it() {
     var maxX = d3.max(nfl_data, d => d.pick)
     var minY = Math.min.apply(Math, nfl_data.map(function(d) {return d.career_av; }))
     var maxY = Math.max.apply(Math, nfl_data.map(function(d) {return d.career_av; }))
+    min_year = d3.min(nfl_data, d => d.year)
+    max_year = d3.max(nfl_data, d => d.year)
+
+    date1 = min_year;
+    date2 = max_year;
+    
     
     xScale = d3.scaleLinear().domain([minX-2, maxX+2]).range([0, main_width]);
     yScale = d3.scaleLinear().domain([minY-2, maxY+2]).range([main_height, 0]);
@@ -94,7 +102,24 @@ function plot_it() {
 
 	
 	set_up_options()
+
+
+	set_up_slider()
+
+
+	// TODO fix interactions, brushing
+	d3.selectAll('.handle1').call(d3.drag()
+		.on('start.interrupt', function() {brushing.interrupt();})
+		.on('start drag', function() {update1(x_date.invert(d3.event.x), date2)})
+		);
+
+	d3.selectAll('.handle2').call(d3.drag()
+		.on('start.interrupt', function() {brushing.interrupt();})
+		.on('start drag', function() {update2(x_date.invert(d3.event.x), date1) })
+		);
 	
+
+
 	// TODO set up interactions
 	// Actives 
 	d3.selectAll('.position_buttons').on('click', position_change)
@@ -303,7 +328,7 @@ function position_change(d,i,g) {
 		}
 		new_data = nfl_data.filter(position_filter)
 	}
-	console.log(new_data)
+	console.log('new data ' + new_data)
 	visualize(new_data)	
 }
 
@@ -332,3 +357,226 @@ function stat_change(d,i,g) {
 	
 	d3.select(this).select('rect').attr('fill', '#999999')
 }
+
+
+
+// this function sets up the original slider
+function set_up_slider() {
+
+	console.log('slider!!!')
+
+	var brush_width = main_width,
+		brush_height = main_height/5;
+
+    // var min_year = d3.min(nfl_data, d => d.year)
+    // var max_year = d3.max(nfl_data, d => d.year)
+
+	var brusher = d3.select('.brush')
+	.attr('width', brush_width)
+	.attr('height', brush_height)
+
+
+	console.log('min year ' + min_year)
+	console.log('max year ' + max_year)
+
+	// set up axis
+	x_date = d3.scaleTime().domain([min_year,max_year]).range([0, brush_width]).clamp(true)
+
+	var brushing = brusher.append('g').attr('class', 'brushing');
+
+
+
+	brushing.append('line')
+	.attr('class', 'track')
+	.attr('stroke-linecap', 'round')
+	.attr("x1", x_date.range()[0])
+    .attr("x2", x_date.range()[1])
+  .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+    .attr("class", "track-inset")
+    .attr('stroke-linecap', 'round')
+    .attr('stroke', '#dcdcdc')
+    .attr('stroke-width', '8px')
+  .select(function() { return this.parentNode.appendChild(this.cloneNode(true)); })
+    .attr("class", "track-overlay")
+    .attr('pointer-events', 'stroke')
+    .attr('stroke-width', '50px')
+    .attr('stroke', 'transparent')
+    .attr('cursor', 'crosshair')
+
+ 	/*
+    .call(d3.drag()
+        .on("start.interrupt", function() { brushing.interrupt(); })
+        .on("start drag", function() { update(x_date.invert(d3.event.x)); }));
+
+	*/
+
+brushing.insert("g", ".track-overlay")
+    .attr("class", "ticks")
+    .attr('stroke-linecap', 'round')
+   .attr("transform", "translate(0," + 38 + ")")
+  .selectAll("text")
+    .data(x_date.ticks(10))
+    .enter()
+    .append("text")
+    .attr("x", x_date)
+    .attr("y", 30)
+    .attr("text-anchor", "middle")
+    .text(function(d) { return d.year; });
+
+/*
+var handle = brushing.insert("circle", ".track-overlay")
+    .attr("class", "handle")
+    .attr('fill', '#fff')
+    .attr('stroke', '#000')
+    .attr('stroke-opacity', '0.5')
+    .attr('stroke-width', '1.25px')
+    .attr("r", 9)
+*/
+
+var handle1 = brushing.insert("circle", ".track-overlay")
+    .attr("class", "handle1")
+    .attr('id', 'handle1')
+    .attr('fill', '#fff')
+    .attr('stroke', '#000')
+    .attr('stroke-opacity', '0.5')
+    .attr('stroke-width', '1.25px')
+    .attr("r", 9)
+    .call(d3.drag()
+        .on("start.interrupt", function() { brushing.interrupt(); })
+       .on("start drag", function() { update(x_date.invert(d3.event.x)); }));
+
+var handle2 = brushing.insert("circle", ".track-overlay")
+    .attr("class", "handle2")
+    .attr('id', 'handle2')
+    .attr('cx', brush_width)
+    .attr('fill', '#fff')
+    .attr('stroke', '#000')
+    .attr('stroke-opacity', '0.5')
+    .attr('stroke-width', '1.25px')
+    .attr("r", 9)
+    .call(d3.drag()
+       .on("start.interrupt", function() { brushing.interrupt(); })
+        .on("start drag", function() { update(x_date.invert(d3.event.x)); }));
+
+
+var label1 = brushing.append("text")  
+    .attr("class", "label")
+    .attr('id', 'label1')
+    .attr("text-anchor", "middle")
+    .text(min_year)
+    .attr("transform", "translate(0," + (25) + ")")
+
+var label2 = brushing.append("text") 
+	.attr('x', brush_width) 
+    .attr("class", "label")
+    .attr('id', 'label2')
+    .attr("text-anchor", "middle")
+    .text(max_year)
+    .attr("transform", "translate(0," + (25) + ")")
+
+}
+
+
+
+function update1(h, d2) {
+
+	console.log('update1')
+
+	// update position and text of the label according to the two sliders
+
+	date1 = x_date(h)
+
+	handle1.attr('cx', x_date(h))
+
+	label1.attr('x', x_date(h))
+	.text(h);
+
+	var new_data = data.filter(function(d) 
+						{return (d.date > h) && (d.date < d2);})
+
+	draw_plot(new_data)
+
+
+}
+
+
+function update2(h, d1) {
+
+	console.log('update2')
+	// update position and text of the label according to the two sliders
+
+	date2 = x_date(h)
+
+	handle2.attr('cx', x_date(h))
+
+	label2.attr('x', x_date(h))
+	.text(h);
+
+	var new_data = data.filter(function(d) 
+		{return (d.date < h) && (d.date > d1);})
+
+	draw_plot(new_data)
+
+
+}
+
+function update(h) {
+
+	console.log('update')
+	// update position and text of the label according to the two sliders
+
+	console.log('handle ' + handle)
+
+	console.log('x_date(h) ' + x_date(h))
+	handle.attr('cx', x_date(h))
+
+	label.attr('x', x_date(h))
+	.text(h);
+
+	var new_data = data.filter(function(d) 
+		{return d.date < h;})
+
+	draw_plot(new_data)
+
+
+}
+
+function draw_plot(data) {
+
+	console.log('draw update')
+
+	var circles = d3.select('.mainplot').selectAll('points').data(data).enter()
+	.append('circle')
+	.attr('class', 'points')
+	.attr('r', 3)		
+	.attr('cx', d => xScale(d.pick))
+	.attr('cy', d => yScale(d.career_av))
+	.attr('fill', d => color_array[d.position])
+	.style('opacity', .5)
+
+	circles.exit().remove();
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
