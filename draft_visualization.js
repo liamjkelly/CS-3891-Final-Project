@@ -361,6 +361,9 @@ function stat_change(d,i,g) {
 
 
 // this function sets up the original slider
+
+// adapted from https://bl.ocks.org/officeofjane/9b9e606e9876e34385cc4aeab188ed73
+// also useful ? https://bl.ocks.org/ezzaouia/ece919dd2281b8629d46ef62c8c52535
 function set_up_slider() {
 
 	console.log('slider!!!')
