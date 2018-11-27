@@ -11,6 +11,7 @@ var option_box
 var trans = d3.transition().duration(1000)
 
 var brushing, date1, date2, min_year, max_year, handle, handle1, handle2, x_date
+
 // FIXME (JOE): This is super temporary I did this on an airplane, has to be
 // a way to get it to read in the data as integers instead of strings. Causing
 // problems with our data
@@ -54,7 +55,6 @@ function plot_it() {
 
     date1 = min_year;
     date2 = max_year;
-    
     
     xScale = d3.scaleLinear().domain([minX-2, maxX+2]).range([0, main_width]);
     yScale = d3.scaleLinear().domain([minY-2, maxY+2]).range([main_height, 0]);
@@ -100,9 +100,7 @@ function plot_it() {
 		.attr('font-weight', 'bold')
 		.text('Overall Pick')
 
-	
 	set_up_options()
-
 
 	set_up_slider()
 
@@ -117,8 +115,6 @@ function plot_it() {
 		.on('start.interrupt', function() {brushing.interrupt();})
 		.on('start drag', function() {update2(x_date.invert(d3.event.x), date1) })
 		);
-	
-
 
 	// TODO set up interactions
 	// Actives 
