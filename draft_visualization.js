@@ -1,28 +1,28 @@
-var width = 1300, height = 800;
+var width = 1500, height = 800;
 var x_pad = 60, y_pad = 20;
 var actual_width = width-2*x_pad, actual_height = height-2*y_pad
-var main_width = actual_width*(3/4), main_height = actual_height*(2/3)
+var main_width = actual_width*(4/7), main_height = actual_height*(1/2)
 
 var xScale, yScale
 var scheme = d3.schemeCategory10
 var color_array = {QB: scheme[0], RB: scheme[2], WR_TE: scheme[1], OL: scheme[8],
 				   DB: scheme[4], DL_LB: scheme[3], Other: scheme[6]}
+var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 Years Approximate Value"}
+				   
 var option_box
-var trans = d3.transition().duration(1000)
+var cached_stat = 'career_av'
+var trans = d3.transition().duration(2000)
 
 var brushing, date1, date2, min_year, max_year, handle, handle1, handle2, x_date
 
-// FIXME (JOE): This is super temporary I did this on an airplane, has to be
-// a way to get it to read in the data as integers instead of strings. Causing
-// problems with our data
 function filter_data(d) {
-	d.pick = parseInt(d.pick)
-	d.round = parseInt(d.round)
-	d.probowls = parseInt(d.probowls)
-	d.career_av = parseInt(d.career_av)
-	d.first4_av = parseInt(d.first4_av)
-	d.year = parseInt(d.year)
-	d.seasons = parseInt(d.seasons)
+	d.pick = +d.pick
+	d.round = +d.round
+	d.probowls = +d.probowls
+	d.career_av = +d.career_av
+	d.first4_av = +d.first4_av
+	d.year = +d.year
+	d.seasons = +d.seasons
 }
 
 function plot_it() {
@@ -43,7 +43,7 @@ function plot_it() {
 	//.attr('transform', 'translate(0,'+(main_height+20)+')');
 		.attr('transform', 'translate(0,'+(main_height+50)+')');
 	d3.select('.mainview').append('g').attr('class', 'options')
-		.attr('transform', 'translate('+(main_width+10)+','+(actual_height*(1.5/7))+')');
+		.attr('transform', 'translate('+(main_width+10)+','+(main_height)+')');
 
 	// Set up Scales
     var minX = d3.min(nfl_data, d => d.pick)
@@ -88,7 +88,8 @@ function plot_it() {
 		.style('font-size', '18px')
 		.attr('font-weight', 'bold')
 		.attr('font-family', 'sans-serif')
-		.text("Career Average")
+		.text(d => y_label_array[cached_stat])
+		.attr('class', 'y_axis_label')
     
     d3.select('.mainplot').append('text')
 		.attr('x', main_width/2)
@@ -99,11 +100,13 @@ function plot_it() {
 		.attr('font-size', '18px')
 		.attr('font-weight', 'bold')
 		.text('Overall Pick')
+		.attr('class', 'x_axis_label')
 
+	set_up_other_plot()
+		
 	set_up_options()
-
+	
 	set_up_slider()
-
 
 	// TODO fix interactions, brushing
 	d3.selectAll('.handle1').call(d3.drag()
@@ -125,17 +128,23 @@ function plot_it() {
 }
 
 
+// Sets up the coordinated view
+function set_up_other_plot() {
+	
+}
+
+
 // Sets up all of the svg related things to the options box
 function set_up_options() {
 	var option_width = actual_width - main_width
-	var option_height = main_height - actual_height*(1.5/7)
+	var option_height = main_height
 	
 	// Set up options data
 	var positions = nfl_data.map(d => d.position).filter((v, i, a) => a.indexOf(v) === i)
 	positions.unshift('All')
-	var graph_stat = ['career_av', 'first4_av', 'probowls', 'seasons']
-	var graph_style = ['scatter_plot', 'bar_graph']
-	option_box = [positions, graph_stat, graph_style]
+	var graph_plot = ['career_av', 'first4_av']
+	var graph_brush = ['career_av', 'first4_av', 'probowls', 'seasons']
+	option_box = [positions, graph_plot, graph_brush]
 	
 	// Append box to the outside
 	d3.select('.options').append('rect')
@@ -158,11 +167,11 @@ function set_up_options() {
 			} else if(i == 1) {
 				return 'translate(0,'+((3/8)*option_height)+')'
 			} else {
-				return 'translate(0,'+ ((3/4)*option_height) +')'
+				return 'translate(0,'+ ((5/8)*option_height) +')'
 			}
 		})
 		.attr('class', function(d,i) {
-			var names = ['options_position', 'options_stat', 'options_style']
+			var names = ['options_position', 'options_stat', 'options_brush']
 			return names[i]
 		})
 	  .append('rect')
@@ -176,7 +185,7 @@ function set_up_options() {
 		.style('stroke-width', 1.5)
 	
 	// Add text to the options
-	var option_headers = ['Position', 'Performance Metric', 'Graph Style']
+	var option_headers = ['Position', 'Plot - Performance Metric', 'Brush - Performance Metric']
 	d3.select('.options').selectAll('g').append('text')
 		.text((d,i) => option_headers[i])
 		.attr('x', 12)
@@ -243,7 +252,7 @@ function set_up_options() {
 		.attr('x', 0)
 		.attr('y', 0)
 		.attr('width', band_x.bandwidth())
-		.attr('height', band_y.bandwidth())
+		.attr('height', ((1/4)*option_height)-40)
 		.style('stroke', '#000000')
 		.attr('fill', 'White')
 		.style('stroke-width', 1.5)
@@ -253,7 +262,7 @@ function set_up_options() {
 	d3.selectAll('.stat_buttons').append('text')
 		.text((d,i) => button_names[i])
 		.attr('x', band_x.bandwidth()/2)
-		.attr('y', band_y.bandwidth()/2)
+		.attr('y', (((1/4)*option_height)-40)/2)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'sans-serif')
@@ -261,32 +270,31 @@ function set_up_options() {
 	// GRAPH STYLE BUTTONS
 	
 	// Adjust scales
-	band_x = d3.scaleBand().domain(graph_style)
-		.range([0,option_width])
-		.paddingInner([.1])
-		.paddingOuter([.1])
+	// band_x = d3.scaleBand().domain(graph_style)
+		// .range([0,option_width])
+		// .paddingInner([.1])
+		// .paddingOuter([.1])
 	
 	// Set up buttons
-	d3.select('.options_style').selectAll('boxes')
+	d3.select('.options_brush').selectAll('boxes')
 		.data(d => d).enter().append('g')
-		.attr('class', 'style_buttons')
-		.attr('id', d => d+'_button')
-		.attr('transform', d => 'translate('+band_x(d)+',30)')
+		.attr('class', 'brush_buttons')
+		.attr('id', d => d+'_brush_button')
+		.attr('transform', (d,i) => 'translate('+band_x(i % 2)+','+band_y(Math.floor(i/2))+')')
 	  .append('rect')
 		.attr('x', 0)
 		.attr('y', 0)
 		.attr('width', band_x.bandwidth())
-		.attr('height', ((1/4)*option_height)-40)
+		.attr('height', band_y.bandwidth())
 		.style('stroke', '#000000')
 		.attr('fill', 'White')
 		.style('stroke-width', 1.5)
 	
 	// Text in buttons
-	button_names = ['Scatter Plot', 'Bar Graph']
-	d3.selectAll('.style_buttons').append('text')
+	d3.selectAll('.brush_buttons').append('text')
 		.text((d,i) => button_names[i])
 		.attr('x', band_x.bandwidth()/2)
-		.attr('y', (((1/4)*option_height)-40)/2)
+		.attr('y', band_y.bandwidth()/2)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'sans-serif')
@@ -294,7 +302,7 @@ function set_up_options() {
 	// Set up initial state of the buttons - button fill is dark grey
 	d3.select('#All_button').select('rect').attr('fill', '#999999')
 	d3.select('#career_av_button').select('rect').attr('fill', '#999999')
-	d3.select('#scatter_plot_button').select('rect').attr('fill', '#999999')
+	d3.select('#career_av_brush_button').select('rect').attr('fill', '#999999')
 }
 
 
@@ -306,8 +314,8 @@ function set_up_options() {
 // Key quickly on position
 // Highlight new pressed button, unhighlight old button
 function position_change(d,i,g) {
+	// Highlight the new button
 	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', 'white')
-	
 	d3.select(this).select('rect').attr('fill', '#999999')
 
 	var i = 0
@@ -324,12 +332,12 @@ function position_change(d,i,g) {
 		}
 		new_data = nfl_data.filter(position_filter)
 	}
-	console.log('new data ' + new_data)
 	visualize(new_data)	
 }
 
 // visualize new data set
-function visualize(new_data) {
+function visualize(new_data, is_stat) {
+	
 	var points = d3.select('.mainplot').select('.point_group')
 		.selectAll('circle').data(new_data, d => d.position)
 
@@ -340,7 +348,7 @@ function visualize(new_data) {
 		.attr('cx', d => xScale(d.pick))
 		.attr('cy', d => yScale(d.career_av))
 		.attr('fill', d => color_array[d.position])
-		.transition(trans)
+	  .transition(trans)
 		.style('opacity', .5)
 }
 
@@ -349,9 +357,51 @@ function visualize(new_data) {
 // Some kind of cool transition
 // Highlight new pressed button, unhighlight old button
 function stat_change(d,i,g) {
+	// Highlight the new button
 	d3.selectAll('.stat_buttons').selectAll('rect').attr('fill', 'white')
-	
 	d3.select(this).select('rect').attr('fill', '#999999')
+	
+	var id = d3.select(this).attr('id')
+	var stat = id.slice(0, -7)
+	
+	if(stat != cached_stat) {
+		cached_stat = stat
+		// update scale and axis
+		var min_stat = d3.min(nfl_data, d => d[stat])
+		var max_stat = d3.max(nfl_data, d => d[stat])
+		
+		yScale.domain([min_stat-2, max_stat+2])
+		
+		d3.selectAll('.y_axis').remove().transition(trans).attr('opacity', 0)
+		
+		d3.select('.mainplot').append('g')
+			.attr('opacity', 0)
+			.attr('class', 'y_axis')
+		  .transition(trans)
+			.attr('opacity', 1)
+			.call(d3.axisLeft(yScale))
+		
+		d3.selectAll('.y_axis_label').remove().transition(trans).attr('opacity', 0)
+		
+		d3.select('.mainplot').append('text')
+			.attr('opacity', 0)
+			.attr('class', 'y_axis_label')
+			.text(y_label_array[stat])
+			.attr("transform", "rotate(-90)")
+			.attr('y', -35)
+			.attr('x', -main_height/2)
+			.style("text-anchor", "middle")
+			.style('font-size', '18px')
+			.attr('font-weight', 'bold')
+			.attr('font-family', 'sans-serif')
+		  .transition(trans)
+			.attr('opacity', 1)
+		
+		// update points y position
+		d3.selectAll('.points')
+		  .transition(trans)
+			.attr('cy', d => yScale(d[stat]))
+	}
 }
 
 
