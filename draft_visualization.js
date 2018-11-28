@@ -129,6 +129,8 @@ function plot_it() {
 
 
 // Sets up the coordinated view
+// FIXME: DeRose - get this second plot set up properly and get the aggregates working
+// Aggregate by team
 function set_up_other_plot() {
 	
 }
