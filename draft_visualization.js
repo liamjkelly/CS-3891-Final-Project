@@ -1,16 +1,22 @@
-var width = 1500, height = 800;
+var width = 1500, height = 750;
 var x_pad = 60, y_pad = 20;
 var actual_width = width-2*x_pad, actual_height = height-2*y_pad
-var main_width = actual_width*(4/7), main_height = actual_height*(1/2)
+var main_width = actual_width*(4/7), main_height = actual_height*(3/5)
+var alt_width = actual_width*(3/7)-x_pad/2, alt_height = actual_height*(3/5)
 
 var xScale, yScale
+var x_alt_scale
 var scheme = d3.schemeCategory10
 var color_array = {QB: scheme[0], RB: scheme[2], WR_TE: scheme[1], OL: scheme[8],
 				   DB: scheme[4], DL_LB: scheme[3], Other: scheme[6]}
-var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 Years Approximate Value"}
-				   
+var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 Years Approximate Value",
+					 probowls: "Pro Bowls", season: "Seasons As Starter"}	   
 var option_box
+
 var cached_stat = 'career_av'
+var cached_brush = 'career_av'
+var cached_data
+
 var trans = d3.transition().duration(2000)
 
 var brushing, date1, date2, min_year, max_year, handle, handle1, handle2, x_date
@@ -43,7 +49,7 @@ function plot_it() {
 	//.attr('transform', 'translate(0,'+(main_height+20)+')');
 		.attr('transform', 'translate(0,'+(main_height+50)+')');
 	d3.select('.mainview').append('g').attr('class', 'options')
-		.attr('transform', 'translate('+(main_width+10)+','+(main_height)+')');
+		.attr('transform', 'translate('+(main_width+70)+','+(main_height+40)+')');
 
 	// Set up Scales
     var minX = d3.min(nfl_data, d => d.pick)
@@ -102,6 +108,8 @@ function plot_it() {
 		.text('Overall Pick')
 		.attr('class', 'x_axis_label')
 
+	cached_data = nfl_data
+		
 	set_up_other_plot()
 		
 	set_up_options()
@@ -124,24 +132,182 @@ function plot_it() {
 	d3.selectAll('.position_buttons').on('click', position_change)
 	
 	d3.selectAll('.stat_buttons').on('click', stat_change)
+	
+	d3.selectAll('.brush_buttons').on('click', brush_stat_change)
 
 	// hover interaction
 	d3.selectAll('.points').on('mouseover', hover_over)
 	d3.selectAll('.points').on('mouseout', hover_out)
 	
+	d3.selectAll('.team_bars').on('click', d => console.log(d))
+	
 }
 
 
 // Sets up the coordinated view
+// FIXME: DeRose - get this second plot set up properly and get the aggregates working
+// Basically shows some kind of bar graph to represent the selected stat for each team (brush stat)
+// that is shown on the current visualization. Does 
 function set_up_other_plot() {
+	d3.select('.mainview').append('g').attr('class', 'alt_plot')
+		.attr('transform', 'translate('+(main_width+x_pad)+',0)')
+	  .append('rect')
+		.attr('class', 'alt_bkgd')
+		.attr('x', 0)
+		.attr('y', 0)
+		.attr('width', alt_width)
+		.attr('height', alt_height)
+		.attr('fill', '#999999')
+		.attr('opacity', .4)
 	
+	// Set up the y-axis
+	d3.select('.alt_plot').append('g')
+		.attr('class', 'alt_y_axis')
+		.call(d3.axisLeft(yScale))
+		
+	// Plot the y-label
+    d3.select('.alt_plot').append("text")
+		.attr("transform", "rotate(-90)")
+		.attr('y', -35)
+		.attr('x', -alt_height/2)
+		.style("text-anchor", "middle")
+		.style('font-size', '18px')
+		.attr('font-weight', 'bold')
+		.attr('font-family', 'sans-serif')
+		.text(d => y_label_array[cached_brush])
+		.attr('class', 'alt_y_axis_label')
+	
+	d3.select('.alt_plot').append('g')
+		.attr('class', 'bar_group')
+	d3.select('.alt_plot').append('g')
+		.attr('class', 'text_group')
+	
+	visualize_alt_plot(nfl_data)
+}
+
+
+function visualize_alt_plot(current_points, is_stat_change) {
+	// Nest the data on team
+	var team_data = d3.nest()
+		.key(d => d.team)
+		.entries(current_points)
+		
+	// Aggregate team values
+	aggregate_team_values(team_data)
+	
+	// Get the team names
+	var team_names = []
+	for(var i = 0; i < team_data.length; i++) {
+		team_names.push(team_data[i].key)
+		console.log(team_data[i].aggregated_stat)
+	}
+	team_names = team_names.sort()
+	
+	console.log(team_names)
+	
+	// Set up the x scale
+	x_alt_scale = d3.scaleBand()
+		.domain(team_names)
+		.range([0, alt_width])
+		.paddingInner([.1])
+		.paddingOuter([.1])
+	
+	// Set up the team color array
+	
+	//Set up the bar graph
+	var bar_selection = d3.select('.bar_group').selectAll('.team_bar')
+		.data(team_data, d => d.key)
+		
+	bar_selection.exit().remove()
+	
+	// Apply transition if is a stat change and change y-axis
+	if(!is_stat_change) {
+		
+		bar_selection.enter().append('rect')
+		  .merge(bar_selection)
+			.attr('x', d => x_alt_scale(d.key))
+			.attr('y', d => yScale(d.aggregated_stat))
+			.attr('width', x_alt_scale.bandwidth())
+			.attr('height', d => alt_height - yScale(d.aggregated_stat))
+			.attr('class', 'team_bar')
+	
+	} else {
+		d3.selectAll('.alt_y_axis').remove().transition(trans).attr('opacity', 0)
+		
+		d3.select('.alt_plot').append('g')
+			.attr('opacity', 0)
+			.attr('class', 'y_axis')
+		  .transition(trans)
+			.attr('opacity', 1)
+			.call(d3.axisLeft(yScale))
+		
+		console.log(3)
+		
+		bar_selection.enter().append('rect')
+		  .merge(bar_selection)
+			.transition(trans)
+			.attr('x', d => x_alt_scale(d.key))
+			.attr('y', d => yScale(d.aggregated_stat))
+			.attr('width', x_alt_scale.bandwidth())
+			.attr('height', d => alt_height - yScale(d.aggregated_stat))
+			.attr('class', 'team_bar')
+		
+		d3.selectAll('.alt_y_axis_label').remove().transition(trans).attr('opacity', 0)
+		
+		d3.select('.alt_plot').append('text')
+			.attr('opacity', 0)
+			.attr('class', 'alt_y_axis_label')
+			.text(y_label_array[cached_stat])
+			.attr("transform", "rotate(-90)")
+			.attr('y', -35)
+			.attr('x', -main_height/2)
+			.style("text-anchor", "middle")
+			.style('font-size', '18px')
+			.attr('font-weight', 'bold')
+			.attr('font-family', 'sans-serif')
+		  .transition(trans)
+			.attr('opacity', 1)
+	}
+		
+		
+	// Set up text under bars
+	var text_selection = d3.select('.text_group').selectAll('.team_text')
+		.data(team_data, d => d.key)
+		
+	text_selection.exit().remove()
+	
+	text_selection.enter().append('text')
+	  .merge(text_selection)
+		.attr("transform", d => 'translate('+(x_alt_scale(d.key)+5)+','+(alt_height+15)+')rotate(-45)')
+		.text(d => d.key)
+		.attr('x', 0)
+		.attr('y', 0)
+		.attr('class', 'team_text')
+		.style("text-anchor", "middle")
+		.style('font-size', '11px')
+		.attr('font-family', 'sans-serif')
+		
+}
+
+
+// Aggregates the given nested data for the team values present in the data
+function aggregate_team_values(nested_data) {
+	for(var i = 0; i < nested_data.length; i++) {
+		var sum = 0
+		
+		for(var j = 0; j < nested_data[i].values.length; j++) {
+			sum += nested_data[i].values[j][cached_brush]
+		}
+		
+		nested_data[i].aggregated_stat = sum / nested_data[i].values.length
+	}
 }
 
 
 // Sets up all of the svg related things to the options box
 function set_up_options() {
-	var option_width = actual_width - main_width
-	var option_height = main_height
+	var option_width = actual_width - main_width - 100
+	var option_height = actual_height - main_height - 40
 	
 	// Set up options data
 	var positions = nfl_data.map(d => d.position).filter((v, i, a) => a.indexOf(v) === i)
@@ -336,11 +502,12 @@ function position_change(d,i,g) {
 		}
 		new_data = nfl_data.filter(position_filter)
 	}
+	
 	visualize(new_data)	
 }
 
 // visualize new data set
-function visualize(new_data, is_stat) {
+function visualize(new_data) {
 	
 	var points = d3.select('.mainplot').select('.point_group')
 		.selectAll('circle').data(new_data, d => d.position)
@@ -350,10 +517,14 @@ function visualize(new_data, is_stat) {
 		.attr('class', 'points')
 		.attr('r', 3)
 		.attr('cx', d => xScale(d.pick))
-		.attr('cy', d => yScale(d.career_av))
+		.attr('cy', d => yScale(d[cached_stat]))
 		.attr('fill', d => color_array[d.position])
 	  .transition(trans)
 		.style('opacity', .5)
+	
+	cached_data = new_data
+	
+	visualize_alt_plot(cached_data, false)
 }
 
 // Changes the y statistic and axis scale
@@ -406,6 +577,13 @@ function stat_change(d,i,g) {
 		  .transition(trans)
 			.attr('cy', d => yScale(d[stat]))
 	}
+	
+	visualize_alt_plot(cached_data, true)
+}
+
+// Does the interactions for the brush stat changing
+function brush_stat_change(d,i) {
+	
 }
 
 // When a point is hovered over, gives information about the player such as
