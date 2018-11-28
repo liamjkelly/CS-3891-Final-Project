@@ -411,6 +411,7 @@ function stat_change(d,i,g) {
 // When a point is hovered over, gives information about the player such as
 // Name, Position, Pick Number, Year, Team
 // inspiration found here: http://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+// Also: http://jarrettmeyer.com/2018/06/05/svg-multiline-text-with-tspan
 function hover_over(d,i,g) {
 	console.log('hover in')
 	d3.select('.mainplot').append('g').attr('class', 'hover_box').attr('transform', 'translate(' + (d3.event.pageX) + ',' + (d3.event.pageY)+ ')')
