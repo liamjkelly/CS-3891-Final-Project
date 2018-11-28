@@ -592,13 +592,26 @@ function brush_stat_change(d,i) {
 // Also: http://jarrettmeyer.com/2018/06/05/svg-multiline-text-with-tspan
 function hover_over(d,i,g) {
 	console.log('hover in')
-	d3.select('.mainplot').append('g').attr('class', 'hover_box').attr('transform', 'translate(' + (d3.event.pageX) + ',' + (d3.event.pageY)+ ')')
+	if (d3.event.pageX+90 > main_width && d3.event.pageY+60 > main_height) {
+		var w = (d3.event.pageX - (main_width-d3.event.pageX+90))
+		var h = (d3.event.pageY - (main_height-d3.event.pageY+60))
+	} else if (d3.event.pageX+90 > main_width) {
+		var w = (d3.event.pageX - (main_width-d3.event.pageX+90))
+		var h = d3.event.pageY
+	} else if (d3.event.pageY+60 > main_height) {
+		var w = d3.event.pageX
+		var h = (d3.event.pageY - (main_height-d3.event.pageY+60))
+	} else {
+		var w = d3.event.pageX
+		var h = d3.event.pageY
+	}
+	d3.select('.mainplot').append('g').attr('class', 'hover_box').attr('transform', 'translate(' + (w) + ',' + (h)+ ')')
 		.append('rect')
-		.attr('x', 0).attr('y', 0).attr('width', 50).attr('height', 50)
+		.attr('x', -45).attr('y', -7).attr('width', 90).attr('height', 60)
 		.attr('fill', '#F8F8FF')
 		.attr('opacity', 0)
-		.transition().duration(300)
-		.attr('opacity', 1)
+		.transition().duration(50)
+		.attr('opacity', 0.8)
 
 	var text = d3.select('.hover_box').append('text')
 		.append('tspan')
@@ -631,7 +644,14 @@ function hover_over(d,i,g) {
 		.attr('dy', 15)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
-	text.attr('opacity', 0)
+		.text(d.team)
+		.attr('font-size', '12px')
+		.attr('font-family', 'sans-serif')
+		.attr('x', 0)
+		.attr('dy', 15)
+		.style('text-anchor', 'middle')
+		.style('alignment-baseline', 'central')
+		.attr('opacity', 0)
 		.transition().duration(300)
 		.attr('opacity', 1)
 
