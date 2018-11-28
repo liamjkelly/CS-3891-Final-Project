@@ -124,6 +124,10 @@ function plot_it() {
 	d3.selectAll('.position_buttons').on('click', position_change)
 	
 	d3.selectAll('.stat_buttons').on('click', stat_change)
+
+	// hover interaction
+	d3.selectAll('.points').on('mouseover', hover_over)
+	d3.selectAll('.points').on('mouseout', hover_out)
 	
 }
 
@@ -406,7 +410,70 @@ function stat_change(d,i,g) {
 	}
 }
 
+// When a point is hovered over, gives information about the player such as
+// Name, Position, Pick Number, Year, Team
+// inspiration found here: http://bl.ocks.org/d3noob/a22c42db65eb00d4e369
+function hover_over(d,i,g) {
+	console.log('hover in')
+	d3.select('.mainplot').append('g').attr('class', 'hover_box').attr('transform', 'translate(' + (d3.event.pageX) + ',' + (d3.event.pageY)+ ')')
+		.append('rect')
+		.attr('x', 0).attr('y', 0).attr('width', 50).attr('height', 50)
+		.attr('fill', '#F8F8FF')
+		.attr('opacity', 0)
+		.transition().duration(300)
+		.attr('opacity', 1)
 
+	var text = d3.select('.hover_box').append('text')
+		.append('tspan')
+		.text(d.player)
+		.attr('font-size', '12px')
+		.attr('font-family', 'sans-serif')
+		.style('text-anchor', 'middle')
+		.style('alignment-baseline', 'central')
+		.append('tspan')
+		.text(d.position)
+		.attr('font-size', '12px')
+		.attr('font-family', 'sans-serif')
+		.attr('x', 0)
+		.attr('dy', 15)
+		.style('text-anchor', 'middle')
+		.style('alignment-baseline', 'central')
+		.append('tspan')
+		.text('Pick ' + d.pick)
+		.attr('font-size', '12px')
+		.attr('font-family', 'sans-serif')
+		.attr('x', 0)
+		.attr('dy', 15)
+		.style('text-anchor', 'middle')
+		.style('alignment-baseline', 'central')
+		.append('tspan')
+		.text(d.year)
+		.attr('font-size', '12px')
+		.attr('font-family', 'sans-serif')
+		.attr('x', 0)
+		.attr('dy', 15)
+		.style('text-anchor', 'middle')
+		.style('alignment-baseline', 'central')
+	text.attr('opacity', 0)
+		.transition().duration(300)
+		.attr('opacity', 1)
+
+	//div_hover.transition().duration(200)
+	//	.text(d.player +'\n' + d.position + '\n' + 'Pick ' + d.pick + '\n' + d.year)
+	//	.attr('font-size', '12px')
+	//	.attr('font-family', 'sans-serif')
+	//	.attr('opacity', 1)
+	//	.style('left', d3.event.pageX)
+	//	.style('top', (d3.event.pageY - 60))
+}
+
+function hover_out(d,i,g) {
+	console.log('hover out')
+	var box = d3.selectAll('.hover_box')
+	box.select('rect').transition().duration(300).attr('opacity', 0)
+	box.select('html').transition().duration(300).attr('opacity', 0)
+	box.remove()
+}
 
 // this function sets up the original slider
 
