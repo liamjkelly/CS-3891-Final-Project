@@ -138,8 +138,7 @@ function plot_it() {
 	d3.selectAll('.brush_buttons').on('click', brush_stat_change)
 
 	// hover interaction
-	d3.selectAll('.points').on('mouseover', hover_over)
-	d3.selectAll('.points').on('mouseout', hover_out)
+	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
 	
 	d3.selectAll('.team_bars').on('click', d => console.log(d))
 	
@@ -505,11 +504,11 @@ function position_change(d,i,g) {
 		new_data = nfl_data.filter(position_filter)
 	}
 	
-	visualize(new_data)	
+	visualize_new_pos(new_data)	
 }
 
 // visualize new data set
-function visualize(new_data) {
+function visualize_new_pos(new_data) {
 	
 	var points = d3.select('.mainplot').select('.point_group')
 		.selectAll('circle').data(new_data, d => d.position)
@@ -609,7 +608,7 @@ function hover_over(d,i,g) {
 	}
 	d3.select('.mainplot').append('g').attr('class', 'hover_box').attr('transform', 'translate(' + (w) + ',' + (h)+ ')')
 		.append('rect')
-		.attr('x', -45).attr('y', -7).attr('width', 90).attr('height', 60)
+		.attr('x', -45).attr('y', -7).attr('width', 90).attr('height', 75)
 		.attr('fill', '#F8F8FF')
 		.attr('opacity', 0)
 		.transition().duration(50)
@@ -646,6 +645,7 @@ function hover_over(d,i,g) {
 		.attr('dy', 15)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
+		.append('tspan')
 		.text(d.team)
 		.attr('font-size', '12px')
 		.attr('font-family', 'sans-serif')
@@ -657,6 +657,7 @@ function hover_over(d,i,g) {
 		.transition().duration(300)
 		.attr('opacity', 1)
 
+	console.log(d.year)
 	//div_hover.transition().duration(200)
 	//	.text(d.player +'\n' + d.position + '\n' + 'Pick ' + d.pick + '\n' + d.year)
 	//	.attr('font-size', '12px')
