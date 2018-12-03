@@ -513,15 +513,22 @@ function visualize_new(new_data) {
 	var points = d3.select('.mainplot').select('.point_group')
 		.selectAll('circle').data(new_data, d => d.position)
 
-	points.exit().transition(trans).style('opacity', 0).remove()
+	points.exit()
+	//.transition(trans)
+	.style('opacity', 0).remove()
+
 	points.enter().append('circle')
 		.attr('class', 'points')
 		.attr('r', 3)
 		.attr('cx', d => xScale(d.pick))
 		.attr('cy', d => yScale(d[cached_stat]))
 		.attr('fill', d => color_array[d.position])
-	  .transition(trans)
 		.style('opacity', .5)
+		//.transition(trans)
+		
+
+
+	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
 	
 	cached_data = new_data
 	
