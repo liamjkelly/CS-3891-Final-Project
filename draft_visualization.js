@@ -504,11 +504,11 @@ function position_change(d,i,g) {
 		new_data = nfl_data.filter(position_filter)
 	}
 	
-	visualize_new_pos(new_data)	
+	visualize_new(new_data)	
 }
 
 // visualize new data set
-function visualize_new_pos(new_data) {
+function visualize_new(new_data) {
 	
 	var points = d3.select('.mainplot').select('.point_group')
 		.selectAll('circle').data(new_data, d => d.position)
@@ -656,17 +656,9 @@ function hover_over(d,i,g) {
 		.attr('opacity', 0)
 		.transition().duration(300)
 		.attr('opacity', 1)
-
-	console.log(d.year)
-	//div_hover.transition().duration(200)
-	//	.text(d.player +'\n' + d.position + '\n' + 'Pick ' + d.pick + '\n' + d.year)
-	//	.attr('font-size', '12px')
-	//	.attr('font-family', 'sans-serif')
-	//	.attr('opacity', 1)
-	//	.style('left', d3.event.pageX)
-	//	.style('top', (d3.event.pageY - 60))
 }
 
+// When you hover out of a point, the box disappears
 function hover_out(d,i,g) {
 	console.log('hover out')
 	var box = d3.selectAll('.hover_box')
@@ -822,7 +814,7 @@ function brushed() {
                     })
                 ));
                 */
-                visualize(new_data)
+                visualize_new(new_data)
         }
     }
 
