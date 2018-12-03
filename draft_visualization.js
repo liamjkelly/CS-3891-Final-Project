@@ -515,7 +515,7 @@ function visualize_new(new_data) {
 
 	points.exit()
 	//.transition(trans)
-	.style('opacity', 0).remove()
+	.attr('fill', '	#C0C0C0')
 
 	points.enter().append('circle')
 		.attr('class', 'points')
