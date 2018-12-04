@@ -1,10 +1,9 @@
 // FIXME:
 // 1. NEED TO FIX THE BAR GRAPHS on the alt plot (going off top, 0 is not bottom - ADD SOME SORT OF LINE FOR 0)
-// 2. Points going off plot when brushing after selecting round
 // 3. Other/OL points are hard to see when in focus mode
-// 4. Alt plot and brush y-axis label
+// 4. Brush y-axis label needs to change on stat_change()
 // 5. Aggregate point in brush not changing in First4AV
-// 6. Some names don't fit in the hover box
+// 6. A couple names don't fit in hover box
 // 7. Brush performance metric might not be helpful - probably better to just be an aggregate by team
 
 var width = 1500, height = 750;
