@@ -13,9 +13,20 @@ var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 
 					 probowls: "Pro Bowls", season: "Seasons As Starter"}	   
 var option_box
 
+var team_color_array = {ARI: '#97233F', ATL: '#A71930', BAL: '#241773', BUF: '#00338D',
+		CAR: '#0085CA', CHI: '#0B162A', CIN: '#FB4F14', CLE: '#EC5614', DAL: '#041E42',
+		DEN: '#002244', DET: '#0076B6', GNB: '#203731', HOU: '#03202F', IND: '#002C5F',
+		JAX: '#006778', KAN: '#E31837', MIA: '#008E97', MIN: '#4F2683', NOR: '#D3BC8D',
+		NWE: '#002244', NYG: '#0B2265', NYJ: '#003F2D', OAK: '#000000', PHI: '#004C54',
+		PIT: '#FFB612', SDG: '#002A5E', SEA: '#002244', SFO: '#AA0000', STL: '#002244',
+		TAM: '#D50A0A', TEN: '#002A5C', WAS: '#773141'}
+
 var cached_stat = 'career_av'
 var cached_brush = 'career_av'
 var cached_data
+var cached_pos = 'All'
+
+var unviewed_color = '#C0C0C0'
 
 var trans = d3.transition().duration(2000)
 
@@ -186,13 +197,19 @@ function set_up_other_plot() {
 	visualize_alt_plot(nfl_data)
 }
 
-
+// FIXME: NEED TO FIX THE BAR GRAPHS - ADD SOME SORT OF LINE FOR 0
 function visualize_alt_plot(current_points, is_stat_change) {
+	// filter data if only one position is shown
+	var points_viewed = current_points
+	if (cached_pos != 'All') {
+		points_viewed = current_points.filter(d => d.position == cached_pos)
+	}
+	
 	// Nest the data on team
 	var team_data = d3.nest()
 		.key(d => d.team)
-		.entries(current_points)
-		
+		.entries(points_viewed)
+	
 	// Aggregate team values
 	aggregate_team_values(team_data)
 	
@@ -200,11 +217,8 @@ function visualize_alt_plot(current_points, is_stat_change) {
 	var team_names = []
 	for(var i = 0; i < team_data.length; i++) {
 		team_names.push(team_data[i].key)
-		console.log(team_data[i].aggregated_stat)
 	}
 	team_names = team_names.sort()
-	
-	console.log(team_names)
 	
 	// Set up the x scale
 	x_alt_scale = d3.scaleBand()
@@ -213,26 +227,26 @@ function visualize_alt_plot(current_points, is_stat_change) {
 		.paddingInner([.1])
 		.paddingOuter([.1])
 	
-	// Set up the team color array
-	
 	//Set up the bar graph
-	var bar_selection = d3.select('.bar_group').selectAll('.team_bar')
+	var bar_selection = d3.select('.bar_group').selectAll('rect')
 		.data(team_data, d => d.key)
-		
+
 	bar_selection.exit().remove()
 	
 	// Apply transition if is a stat change and change y-axis
 	if(!is_stat_change) {
-		
+
 		bar_selection.enter().append('rect')
 		  .merge(bar_selection)
 			.attr('x', d => x_alt_scale(d.key))
 			.attr('y', d => yScale(d.aggregated_stat))
+			.attr('fill', d => team_color_array[d.key])
 			.attr('width', x_alt_scale.bandwidth())
 			.attr('height', d => alt_height - yScale(d.aggregated_stat))
 			.attr('class', 'team_bar')
 	
 	} else {
+		
 		d3.selectAll('.alt_y_axis').remove().transition(trans).attr('opacity', 0)
 		
 		d3.select('.alt_plot').append('g')
@@ -241,8 +255,6 @@ function visualize_alt_plot(current_points, is_stat_change) {
 		  .transition(trans)
 			.attr('opacity', 1)
 			.call(d3.axisLeft(yScale))
-		
-		console.log(3)
 		
 		bar_selection.enter().append('rect')
 		  .merge(bar_selection)
@@ -261,6 +273,7 @@ function visualize_alt_plot(current_points, is_stat_change) {
 			.text(y_label_array[cached_stat])
 			.attr("transform", "rotate(-90)")
 			.attr('y', -35)
+			.attr('fill', d => team_color_array[d.team])
 			.attr('x', -main_height/2)
 			.style("text-anchor", "middle")
 			.style('font-size', '18px')
@@ -269,8 +282,8 @@ function visualize_alt_plot(current_points, is_stat_change) {
 		  .transition(trans)
 			.attr('opacity', 1)
 	}
-		
-		
+	
+	
 	// Set up text under bars
 	var text_selection = d3.select('.text_group').selectAll('.team_text')
 		.data(team_data, d => d.key)
@@ -438,13 +451,7 @@ function set_up_options() {
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'sans-serif')
 	
-	// GRAPH STYLE BUTTONS
-	
-	// Adjust scales
-	// band_x = d3.scaleBand().domain(graph_style)
-		// .range([0,option_width])
-		// .paddingInner([.1])
-		// .paddingOuter([.1])
+	// ALTERNATIVE PLOT BUTTONS
 	
 	// Set up buttons
 	d3.select('.options_brush').selectAll('boxes')
@@ -488,23 +495,27 @@ function position_change(d,i,g) {
 	// Highlight the new button
 	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', 'white')
 	d3.select(this).select('rect').attr('fill', '#999999')
-
-	var i = 0
+	
 	var id = d3.select(this).attr('id')
 	var pos = id.slice(0, -7)
-	if (pos === "All") {
-		new_data = nfl_data
-	}
-	else {
-		function position_filter(elem) {
-			if (elem.position === pos) {
-				return elem
-			}
-		}
-		new_data = nfl_data.filter(position_filter)
-	}
+
+	cached_pos = pos
 	
-	visualize_new(new_data)	
+	d3.selectAll('.points')
+		.attr('fill', fill_points)
+		
+	visualize_alt_plot(cached_data)
+}
+
+// Fills the points with colors based on the selected position
+function fill_points(d) {
+	if(cached_pos == 'All') {
+		return color_array[d.position]
+	} else if(d.position != cached_pos) {
+		return unviewed_color
+	} else {
+		return color_array[d.position]
+	}
 }
 
 // visualize new data set
@@ -513,21 +524,19 @@ function visualize_new(new_data) {
 	var points = d3.select('.mainplot').select('.point_group')
 		.selectAll('circle').data(new_data, d => d.position)
 
-	points.exit()
-	//.transition(trans)
-	.attr('fill', '	#C0C0C0')
+	points.exit().remove()
+		//.transition(trans)
 
 	points.enter().append('circle')
 		.attr('class', 'points')
 		.attr('r', 3)
 		.attr('cx', d => xScale(d.pick))
 		.attr('cy', d => yScale(d[cached_stat]))
-		.attr('fill', d => color_array[d.position])
+		.attr('fill', fill_points)
 		.style('opacity', .5)
+		.attr('id', 'viewed')
 		//.transition(trans)
 		
-
-
 	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
 	
 	cached_data = new_data
@@ -599,6 +608,10 @@ function brush_stat_change(d,i) {
 // inspiration found here: http://bl.ocks.org/d3noob/a22c42db65eb00d4e369
 // Also: http://jarrettmeyer.com/2018/06/05/svg-multiline-text-with-tspan
 function hover_over(d,i,g) {
+	if(d3.select(this).attr('fill') == unviewed_color) {
+		return
+	}
+	
 	console.log('hover in')
 	if (d3.event.pageX+90 > main_width && d3.event.pageY+60 > main_height) {
 		var w = (d3.event.pageX - (main_width-d3.event.pageX+90))
@@ -673,9 +686,6 @@ function hover_out(d,i,g) {
 	box.select('html').transition().duration(300).attr('opacity', 0)
 	box.remove()
 }
-
-
-
 
 function brushing_context() {
 
