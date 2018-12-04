@@ -4,10 +4,8 @@
 // 3. Other/OL points are hard to see when in focus mode
 // 4. Alt plot and brush y-axis label
 // 5. Aggregate point in brush not changing in First4AV
-// 6. Hover box not big enough, team is fading in for some reason
-// 7. HOF is listed in player name but it should be its own part of the box if necessary
-// 8. Brush performance metric might not be helpful - probably better to just be an aggregate by team
-// 9. Alt plot is not properly aggregating - probably due to scales
+// 6. Some names don't fit in the hover box
+// 7. Brush performance metric might not be helpful - probably better to just be an aggregate by team
 
 var width = 1500, height = 750;
 var x_pad = 60, y_pad = 20;
@@ -36,6 +34,11 @@ var cached_stat = 'career_av'
 var cached_brush = 'career_av'
 var cached_data
 var cached_pos = 'All'
+var cached_round = 'All'
+
+// This is just a way of representing everything we could show based on our x-axis
+// nfl_data if no round is selected, just that round if a round is selected
+var brush_data
 
 var unviewed_color = '#C0C0C0'
 
@@ -131,6 +134,7 @@ function plot_it() {
 		.attr('class', 'x_axis_label')
 
 	cached_data = nfl_data
+	brush_data = nfl_data
 		
 	set_up_other_plot()
 		
@@ -139,19 +143,6 @@ function plot_it() {
 	brushing_context()
 
 	pick_round()
-	
-	// set_up_slider()
-
-	// // TODO fix interactions, brushing
-	// d3.selectAll('.handle1').call(d3.drag()
-	// 	.on('start.interrupt', function() {brushing.interrupt();})
-	// 	.on('start drag', function() {update1(x_date.invert(d3.event.x), date2)})
-	// 	);
-
-	// d3.selectAll('.handle2').call(d3.drag()
-	// 	.on('start.interrupt', function() {brushing.interrupt();})
-	// 	.on('start drag', function() {update2(x_date.invert(d3.event.x), date1) })
-	// 	);
 
 	// TODO set up interactions
 	// Actives 
@@ -287,7 +278,6 @@ function visualize_alt_plot(current_points, is_stat_change) {
 			.text(y_label_array[cached_stat])
 			.attr("transform", "rotate(-90)")
 			.attr('y', -35)
-			.attr('fill', d => team_color_array[d.team])
 			.attr('x', -main_height/2)
 			.style("text-anchor", "middle")
 			.style('font-size', '18px')
@@ -306,7 +296,7 @@ function visualize_alt_plot(current_points, is_stat_change) {
 	
 	text_selection.enter().append('text')
 	  .merge(text_selection)
-		.attr("transform", d => 'translate('+(x_alt_scale(d.key)+5)+','+(alt_height+15)+')rotate(-45)')
+		.attr("transform", d => 'translate('+(x_alt_scale(d.key)+x_alt_scale.bandwidth()/2)+','+(alt_height+15)+')rotate(-45)')
 		.text(d => d.key)
 		.attr('x', 0)
 		.attr('y', 0)
@@ -583,11 +573,18 @@ function stat_change(d,i,g) {
 			.attr('cy', d => yScale(d[stat]))
 	}
 	
+	cached_brush = cached_stat
+	
 	visualize_alt_plot(cached_data, true)
 }
 
 // Does the interactions for the brush stat changing
 function brush_stat_change(d,i) {
+	
+}
+
+// Updates the brush for when there is a position or stat change
+function update_brush() {
 	
 }
 
@@ -618,15 +615,16 @@ function hover_over(d,i,g) {
 	// draw box
 	d3.select('.mainplot').append('g').attr('class', 'hover_box').attr('transform', 'translate(' + (w) + ',' + (h)+ ')')
 		.append('rect')
-		.attr('x', -45).attr('y', -7).attr('width', 90).attr('height', 75)
+		.attr('x', -45).attr('y', -7).attr('width', 120).attr('height', 75)
 		.attr('fill', '#F8F8FF')
-		.attr('opacity', 0)
-		.transition().duration(50)
+		// .attr('opacity', 0)
+		// .transition().duration(50)
 		.attr('opacity', 0.8)
 
 	// text inside rectangle
 	var text = d3.select('.hover_box').append('text')
 		.append('tspan')
+		.attr('x', 15)
 		.text(d.player)
 		.attr('font-size', '12px')
 		.attr('font-family', 'sans-serif')
@@ -636,23 +634,23 @@ function hover_over(d,i,g) {
 		.text(d.position)
 		.attr('font-size', '12px')
 		.attr('font-family', 'sans-serif')
-		.attr('x', 0)
+		.attr('x', 15)
 		.attr('dy', 15)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
 		.append('tspan')
-		.text('Pick ' + d.pick)
+		.text(d.year + ', Pick ' + d.pick)
 		.attr('font-size', '12px')
 		.attr('font-family', 'sans-serif')
-		.attr('x', 0)
+		.attr('x', 15)
 		.attr('dy', 15)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
 		.append('tspan')
-		.text(d.year)
+		.text(cached_stat + ': ' + d[cached_stat])
 		.attr('font-size', '12px')
 		.attr('font-family', 'sans-serif')
-		.attr('x', 0)
+		.attr('x', 15)
 		.attr('dy', 15)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
@@ -660,12 +658,12 @@ function hover_over(d,i,g) {
 		.text(d.team)
 		.attr('font-size', '12px')
 		.attr('font-family', 'sans-serif')
-		.attr('x', 0)
+		.attr('x', 15)
 		.attr('dy', 15)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
-		.attr('opacity', 0)
-		.transition().duration(300)
+		// .attr('opacity', 0)
+		// .transition().duration(300)
 		.attr('opacity', 1)
 }
 
@@ -724,11 +722,10 @@ function brushing_context() {
            return y_scale(d.career_av);})
 
 
-       slider.append("g")
+    slider.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + brush_height + ")")
         .call(x_axis2)
-
 
     slider.append("text")
 		.attr("transform", "rotate(-90)")
@@ -741,9 +738,7 @@ function brushing_context() {
 		.text('Average Career')
 		.attr('class', 'y_axis_label')
 
-
-
-        slider.append('text')
+    slider.append('text')
         .attr('x', brush_width/2)
         .attr('y', main_height/2 - brush_height)
         .style("text-anchor", "middle")
@@ -817,16 +812,21 @@ function round_change() {
 	var id = d3.select(this).attr('id')
 	var round = id.slice(0, -6)
 	var new_data
-
+	
 	// filter data by round
 	if (round != 'All') {
 		new_data = nfl_data.filter(function(elem) { 
 			if (elem.round == round)
 				return elem;
 		})
+		
+		brush_data = nfl_data.filter(d => d.round == round)
 	} else {
 		new_data = nfl_data
+		brush_data = nfl_data
 	}
+	
+	new_data = new_data.filter(slider_filter)
 
 	// change axis and visualize data
 	update_x_axis(new_data)
@@ -842,18 +842,16 @@ function update_x_axis(new_data) {
 	d3.selectAll('.x_axis').remove().transition(trans).attr('opacity', 0)
 		
 	d3.select('.mainplot').append('g')
+		.attr('transform', 'translate(0,'+(main_height)+')')
 		.attr('opacity', 0)
 		.attr('class', 'x_axis')
 	  .transition(trans)
 		.attr('opacity', 1)
-		.attr('transform', 'translate(0,'+(main_height)+')')
 		.call(d3.axisBottom(xScale))
 }
 
 function aggregate_year(data) {
-
-	//year_data = d3.nest().key(function(d) {return d.year;}).rollup(function(d) {return d3.sum(d, function(g) {console.log(g.career_av); return g.career_av;})}).entries(data);
-
+	
 	year_data = d3.nest()
 		.key(function(d) { return d.year; })
 		.rollup(function(v) { return d3.sum(v, function(d) {return d.career_av; }); })
@@ -865,7 +863,6 @@ function aggregate_year(data) {
 	});
 }
 
-
 // visualize new data set
 function visualize_new(new_data) {
 	
@@ -873,9 +870,9 @@ function visualize_new(new_data) {
 		.selectAll('circle').data(new_data, d => d.position)
 
 	points.exit().remove()
-		//.transition(trans)
 
 	points.enter().append('circle')
+	  .merge(points)
 		.attr('class', 'points')
 		.attr('r', 3)
 		.attr('cx', d => xScale(d.pick))
@@ -883,7 +880,6 @@ function visualize_new(new_data) {
 		.attr('fill', fill_points)
 		.style('opacity', .5)
 		.attr('id', 'viewed')
-		//.transition(trans)
 		
 	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
 	
@@ -894,40 +890,45 @@ function visualize_new(new_data) {
 
 function brushed() {
     var selection = d3.event.selection;
-        if (selection !== null) {
-            var e = d3.event.selection.map(x_date.invert, x_date);
-            /*
-            // for the slider portion
-            // return element if it is between the two points
-            // is this necessary?
-            var test = slider.selectAll(".dotslider");
-            test.classed("selected", function (d) {
-                return e[0] <= d.date && d.date <= e[1];
-            })
+	if (selection !== null) {
+		var e = d3.event.selection.map(x_date.invert, x_date);
+		
+		date1 = e[0]
+		date2 = e[1]
+		
+		/*
+		// for the slider portion
+		// return element if it is between the two points
+		// is this necessary?
+		var test = slider.selectAll(".dotslider");
+		test.classed("selected", function (d) {
+			return e[0] <= d.date && d.date <= e[1];
+		})
 
 
-            var test2 = d3.select('.mainplot').selectAll(".points");
-            test2.classed("selected", function (d) {
-                return e[0] <= d.date && d.date <= e[1];
-            })
-            */
-            function slider_filter(elem) {
-            	if(e[0] <= elem.year && elem.year <= e[1])
-            		return elem;
-            }
-            var new_data = nfl_data.filter(slider_filter)
-            /*
-            d3.select('.mainplot').selectAll(".lineplot")
-                .attr("d", plotline(
-                    data.filter(function (d) {
-                        return e[0] <= d.date && e[1] >= d.date;
-                    })
-                ));
-                */
-            
-            visualize_new(new_data)
-        }
-    }
+		var test2 = d3.select('.mainplot').selectAll(".points");
+		test2.classed("selected", function (d) {
+			return e[0] <= d.date && d.date <= e[1];
+		})
+		*/
+		var new_data = brush_data.filter(slider_filter)
+		/*
+		d3.select('.mainplot').selectAll(".lineplot")
+			.attr("d", plotline(
+				data.filter(function (d) {
+					return e[0] <= d.date && e[1] >= d.date;
+				})
+			));
+			*/
+		
+		visualize_new(new_data)
+	}
+}
+
+function slider_filter(elem) {
+	if(date1 <= elem.year && elem.year <= date2)
+		return elem;
+}
 
 
 
