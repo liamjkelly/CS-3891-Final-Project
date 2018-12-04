@@ -7,6 +7,7 @@
 // 6. Hover box not big enough, team is fading in for some reason
 // 7. HOF is listed in player name but it should be its own part of the box if necessary
 // 8. Brush performance metric might not be helpful - probably better to just be an aggregate by team
+// 9. Alt plot is not properly aggregating - probably due to scales
 
 var width = 1500, height = 750;
 var x_pad = 60, y_pad = 20;
