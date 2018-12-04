@@ -1,3 +1,13 @@
+// FIXME:
+// 1. NEED TO FIX THE BAR GRAPHS on the alt plot (going off top, 0 is not bottom - ADD SOME SORT OF LINE FOR 0)
+// 2. Points going off plot when brushing after selecting round
+// 3. Other/OL points are hard to see when in focus mode
+// 4. Alt plot and brush y-axis label
+// 5. Aggregate point in brush not changing in First4AV
+// 6. Hover box not big enough, team is fading in for some reason
+// 7. HOF is listed in player name but it should be its own part of the box if necessary
+// 8. Brush performance metric might not be helpful - probably better to just be an aggregate by team
+
 var width = 1500, height = 750;
 var x_pad = 60, y_pad = 20;
 var actual_width = width-2*x_pad, actual_height = height-2*y_pad
@@ -201,7 +211,6 @@ function set_up_other_plot() {
 	visualize_alt_plot(nfl_data)
 }
 
-// FIXME: NEED TO FIX THE BAR GRAPHS - ADD SOME SORT OF LINE FOR 0
 function visualize_alt_plot(current_points, is_stat_change) {
 	// filter data if only one position is shown
 	var points_viewed = current_points
