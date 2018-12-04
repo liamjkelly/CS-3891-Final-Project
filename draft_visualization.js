@@ -914,7 +914,8 @@ function brushed() {
                     })
                 ));
                 */
-                visualize_new(new_data)
+            
+            visualize_new(new_data)
         }
     }
 
