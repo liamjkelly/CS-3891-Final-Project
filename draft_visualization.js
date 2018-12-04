@@ -358,7 +358,8 @@ function set_up_options() {
 			}
 		})
 		.attr('class', function(d,i) {
-			var names = ['options_position', 'options_stat', 'options_brush']
+			var names = ['options_position', 'options_stat']
+			//var names = ['options_position', 'options_stat', 'options_brush']
 			return names[i]
 		})
 	  .append('rect')
@@ -372,7 +373,8 @@ function set_up_options() {
 		.style('stroke-width', 1.5)
 	
 	// Add text to the options
-	var option_headers = ['Position', 'Plot - Performance Metric', 'Brush - Performance Metric']
+	//var option_headers = ['Position', 'Plot - Performance Metric', 'Brush - Performance Metric']
+	var option_headers = ['Position', 'Plot - Performance Metric']
 	d3.select('.options').selectAll('g').append('text')
 		.text((d,i) => option_headers[i])
 		.attr('x', 12)
@@ -408,7 +410,9 @@ function set_up_options() {
 		.attr('width', band_x.bandwidth())
 		.attr('height', band_y.bandwidth())
 		.style('stroke', '#000000')
-		.attr('fill', 'White')
+		.attr('fill', function(d) {return color_array[d];})
+		.attr('opacity', .5)
+		//.attr('fill', 'White')
 		.style('stroke-width', 1.5)
 
 	// Text in buttons
@@ -454,6 +458,7 @@ function set_up_options() {
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'sans-serif')
 	
+	/*
 	// ALTERNATIVE PLOT BUTTONS
 	
 	// Set up buttons
@@ -479,11 +484,11 @@ function set_up_options() {
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'sans-serif')
-	
+	*/
 	// Set up initial state of the buttons - button fill is dark grey
 	d3.select('#All_button').select('rect').attr('fill', '#999999')
 	d3.select('#career_av_button').select('rect').attr('fill', '#999999')
-	d3.select('#career_av_brush_button').select('rect').attr('fill', '#999999')
+	//d3.select('#career_av_brush_button').select('rect').attr('fill', '#999999')
 }
 
 
@@ -496,9 +501,17 @@ function set_up_options() {
 // Highlight new pressed button, unhighlight old button
 function position_change(d,i,g) {
 	// Highlight the new button
-	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', 'white')
-	d3.select(this).select('rect').attr('fill', '#999999')
-	
+		//d3.selectAll('.position_buttons').selectAll('rect').attr('fill', 'white')
+	//d3.select(this).select('rect').attr('fill', '#999999')
+	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', function(d) {return color_array[d];}).attr('opacity', .5)
+
+
+	if(this.id == "All_button") {
+		d3.select(this).select('rect').attr('fill', '#999999')
+	}
+	//d3.selectAll('.position_buttons').selectAll('rect').attr('fill', d => color_array[d.position])
+	d3.select(this).select('rect').attr('opacity', 1)
+
 	var id = d3.select(this).attr('id')
 	var pos = id.slice(0, -7)
 
