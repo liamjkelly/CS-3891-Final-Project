@@ -81,7 +81,7 @@ function plot_it() {
 		.attr('class', 'y_axis')
 		.call(d3.axisLeft(yScale));
     d3.select('.mainplot').append('g')
-		.attr('class', '.x_axis')
+		.attr('class', 'x_axis')
 		.attr('transform', 'translate(0,'+(main_height)+')')
 		.call(d3.axisBottom(xScale));
 		
@@ -126,6 +126,8 @@ function plot_it() {
 	set_up_options()
 
 	brushing_context()
+
+	pick_round()
 	
 	// set_up_slider()
 
@@ -147,6 +149,8 @@ function plot_it() {
 	d3.selectAll('.stat_buttons').on('click', stat_change)
 	
 	d3.selectAll('.brush_buttons').on('click', brush_stat_change)
+
+	d3.selectAll('.round_buttons').on('click', round_change)
 
 	// hover interaction
 	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
@@ -518,32 +522,6 @@ function fill_points(d) {
 	}
 }
 
-// visualize new data set
-function visualize_new(new_data) {
-	
-	var points = d3.select('.mainplot').select('.point_group')
-		.selectAll('circle').data(new_data, d => d.position)
-
-	points.exit().remove()
-		//.transition(trans)
-
-	points.enter().append('circle')
-		.attr('class', 'points')
-		.attr('r', 3)
-		.attr('cx', d => xScale(d.pick))
-		.attr('cy', d => yScale(d[cached_stat]))
-		.attr('fill', fill_points)
-		.style('opacity', .5)
-		.attr('id', 'viewed')
-		//.transition(trans)
-		
-	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
-	
-	cached_data = new_data
-	
-	visualize_alt_plot(cached_data, false)
-}
-
 // Changes the y statistic and axis scale
 // Same points different y coordinate, y axis, y axis-label
 // Some kind of cool transition
@@ -612,7 +590,7 @@ function hover_over(d,i,g) {
 		return
 	}
 	
-	console.log('hover in')
+	// calculate position of box origin
 	if (d3.event.pageX+90 > main_width && d3.event.pageY+60 > main_height) {
 		var w = (d3.event.pageX - (main_width-d3.event.pageX+90))
 		var h = (d3.event.pageY - (main_height-d3.event.pageY+60))
@@ -626,6 +604,8 @@ function hover_over(d,i,g) {
 		var w = d3.event.pageX
 		var h = d3.event.pageY
 	}
+
+	// draw box
 	d3.select('.mainplot').append('g').attr('class', 'hover_box').attr('transform', 'translate(' + (w) + ',' + (h)+ ')')
 		.append('rect')
 		.attr('x', -45).attr('y', -7).attr('width', 90).attr('height', 75)
@@ -634,6 +614,7 @@ function hover_over(d,i,g) {
 		.transition().duration(50)
 		.attr('opacity', 0.8)
 
+	// text inside rectangle
 	var text = d3.select('.hover_box').append('text')
 		.append('tspan')
 		.text(d.player)
@@ -680,7 +661,6 @@ function hover_over(d,i,g) {
 
 // When you hover out of a point, the box disappears
 function hover_out(d,i,g) {
-	console.log('hover out')
 	var box = d3.selectAll('.hover_box')
 	box.select('rect').transition().duration(300).attr('opacity', 0)
 	box.select('html').transition().duration(300).attr('opacity', 0)
@@ -771,31 +751,139 @@ function brushing_context() {
 
 }
 
+// allow you to change round that is plotted on the x-axis
+function pick_round() {
+	var round_width = main_width
+	var round_height = main_height / 15
+	var button_height = main_height+45+main_height/5+60
+
+	// set up rounds
+	var rounds = nfl_data.map(d => d.round).filter((v, i, a) => a.indexOf(v) === i)
+	rounds.unshift('All')
+
+	// scale for rounds
+	var band_x = d3.scaleBand().domain([0,1,2,3,4,5,6,7])
+		.range([0, round_width])
+		.paddingInner([.1])
+		.paddingOuter([.1])
+
+	d3.select('.mainview').append('g').attr('class', 'rounds')
+		.attr('transform', 'translate('+0+','+button_height+')')
+
+	// Set up buttons
+	d3.select('.rounds').selectAll('boxes')
+		.data(rounds).enter().append('g')
+		.attr('class', 'round_buttons')
+		.attr('id', d => d+'_round')
+		.attr('transform', (d,i) => 'translate('+band_x(i % 8)+','+0+')')
+	  .append('rect')
+		.attr('x', 0)
+		.attr('y', 0)
+		.attr('width', band_x.bandwidth())
+		.attr('height', round_height)
+		.style('stroke', '#000000')
+		.attr('fill', 'White')
+		.style('stroke-width', 1.5)
+
+	// Text in buttons
+	var button_names = ['All', '1', '2', '3', '4', '5', '6', '7']
+	d3.selectAll('.round_buttons').append('text')
+		.text((d,i) => button_names[i])
+		.attr('x', band_x.bandwidth()/2)
+		.attr('y', (round_height/2))
+		.style('text-anchor', 'middle')
+		.style('alignment-baseline', 'central')
+		.attr('font-family', 'sans-serif')	
+
+	// initial state of button
+	d3.select('#All_round').select('rect').attr('fill', '#999999')
+}
+
+function round_change() {
+	// Highlight the new button
+	d3.selectAll('.round_buttons').selectAll('rect').attr('fill', 'white')
+	d3.select(this).select('rect').attr('fill', '#999999')
+	
+	var id = d3.select(this).attr('id')
+	var round = id.slice(0, -6)
+	var new_data
+
+	// filter data by round
+	if (round != 'All') {
+		new_data = nfl_data.filter(function(elem) { 
+			if (elem.round == round)
+				return elem;
+		})
+	} else {
+		new_data = nfl_data
+	}
+
+	// change axis and visualize data
+	update_x_axis(new_data)
+	visualize_new(new_data)
+}
+
+function update_x_axis(new_data) {
+	// Set up Scales
+    var minX = d3.min(new_data, d => d.pick)
+    var maxX = d3.max(new_data, d => d.pick)
+	xScale = d3.scaleLinear().domain([minX-2, maxX+2]).range([0, main_width])
+
+	d3.selectAll('.x_axis').remove().transition(trans).attr('opacity', 0)
+		
+	d3.select('.mainplot').append('g')
+		.attr('opacity', 0)
+		.attr('class', 'x_axis')
+	  .transition(trans)
+		.attr('opacity', 1)
+		.attr('transform', 'translate(0,'+(main_height)+')')
+		.call(d3.axisBottom(xScale))
+}
 
 function aggregate_year(data) {
 
 	//year_data = d3.nest().key(function(d) {return d.year;}).rollup(function(d) {return d3.sum(d, function(g) {console.log(g.career_av); return g.career_av;})}).entries(data);
 
 	year_data = d3.nest()
-  .key(function(d) { return d.year; })
-  .rollup(function(v) { return d3.sum(v, function(d) {return d.career_av; }); })
-  .entries(data);
+		.key(function(d) { return d.year; })
+		.rollup(function(v) { return d3.sum(v, function(d) {return d.career_av; }); })
+		.entries(data);
 
-  year_data.forEach(function(d) {
- d.year = d.key;
- d.career_av = d.value;
-});
+	year_data.forEach(function(d) {
+		d.year = d.key;
+		d.career_av = d.value;
+	});
 }
 
 
+// visualize new data set
+function visualize_new(new_data) {
+	
+	var points = d3.select('.mainplot').select('.point_group')
+		.selectAll('circle').data(new_data, d => d.position)
 
+	points.exit().remove()
+		//.transition(trans)
+
+	points.enter().append('circle')
+		.attr('class', 'points')
+		.attr('r', 3)
+		.attr('cx', d => xScale(d.pick))
+		.attr('cy', d => yScale(d[cached_stat]))
+		.attr('fill', fill_points)
+		.style('opacity', .5)
+		.attr('id', 'viewed')
+		//.transition(trans)
+		
+	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
+	
+	cached_data = new_data
+	
+	visualize_alt_plot(cached_data, false)
+}
 
 function brushed() {
-
-
-
     var selection = d3.event.selection;
-
         if (selection !== null) {
             var e = d3.event.selection.map(x_date.invert, x_date);
             /*
@@ -813,16 +901,11 @@ function brushed() {
                 return e[0] <= d.date && d.date <= e[1];
             })
             */
-
             function slider_filter(elem) {
             	if(e[0] <= elem.year && elem.year <= e[1])
             		return elem;
             }
-
-
             var new_data = nfl_data.filter(slider_filter)
-
-
             /*
             d3.select('.mainplot').selectAll(".lineplot")
                 .attr("d", plotline(
