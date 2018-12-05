@@ -15,7 +15,7 @@ var alt_width = actual_width*(3/7)-x_pad/2, alt_height = actual_height*(3/5)
 var xScale, yScale
 var x_alt_scale
 var scheme = d3.schemeCategory10
-var color_array = {QB: scheme[0], RB: scheme[2], WR_TE: scheme[1], OL: scheme[8],
+var color_array = {All: '#999999', QB: scheme[0], RB: scheme[2], WR_TE: scheme[1], OL: scheme[8],
 				   DB: scheme[4], DL_LB: scheme[3], Other: scheme[6]}
 var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 Years Approximate Value",
 					 probowls: "Pro Bowls", season: "Seasons As Starter"}	   
@@ -486,7 +486,7 @@ function set_up_options() {
 		.attr('font-family', 'sans-serif')
 	*/
 	// Set up initial state of the buttons - button fill is dark grey
-	d3.select('#All_button').select('rect').attr('fill', '#999999')
+	d3.select('#All_button').select('rect').attr('fill', '#999999').attr('opacity', 1)
 	d3.select('#career_av_button').select('rect').attr('fill', '#999999')
 	//d3.select('#career_av_brush_button').select('rect').attr('fill', '#999999')
 }
