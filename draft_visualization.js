@@ -1,9 +1,10 @@
 // FIXME:
-// - NEED TO FIX THE BAR GRAPHS on the alt plot (going off top, 0 is not bottom - ADD SOME SORT OF LINE FOR 0)
 // - Brush y-axis label needs to change on stat_change()
 // - Aggregate point in brush not changing in First4AV
 // - Different color for 'Other'
-// - Labels for the round selector
+// - There is inconsistencies in points that has to do with the max/min of a given round for a given brush
+//   try selecting a more recent set of years and then adding older years for a late round, not sure why
+//   this is happening or how to fix it
 
 // NOT SUPER IMPORTANT FIXME:
 // - A couple names don't fit in hover box - no one will know unless he selects Dominique Rodgers-Cromartie
