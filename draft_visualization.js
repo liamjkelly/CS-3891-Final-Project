@@ -1,10 +1,15 @@
 // FIXME:
-// 1. NEED TO FIX THE BAR GRAPHS on the alt plot (going off top, 0 is not bottom - ADD SOME SORT OF LINE FOR 0)
-// 3. Other/OL points are hard to see when in focus mode
-// 4. Brush y-axis label needs to change on stat_change()
-// 5. Aggregate point in brush not changing in First4AV
-// 6. A couple names don't fit in hover box
-// 7. Brush performance metric might not be helpful - probably better to just be an aggregate by team
+// - NEED TO FIX THE BAR GRAPHS on the alt plot (going off top, 0 is not bottom - ADD SOME SORT OF LINE FOR 0)
+// - Brush y-axis label needs to change on stat_change()
+// - Aggregate point in brush not changing in First4AV
+// - Different color for 'Other'
+// - Labels for the round selector
+
+// NOT SUPER IMPORTANT FIXME:
+// - A couple names don't fit in hover box - no one will know unless he selects Dominique Rodgers-Cromartie
+// - Flickering when you hover over certain points - has to do with box being located over points,
+//   box also goes out of plot sometimes
+// - Add different stats to hover over box?
 
 var width = 1500, height = 750;
 var x_pad = 60, y_pad = 20;
@@ -15,8 +20,8 @@ var alt_width = actual_width*(3/7)-x_pad/2, alt_height = actual_height*(3/5)
 var xScale, yScale
 var x_alt_scale
 var scheme = d3.schemeCategory10
-var color_array = {QB: scheme[0], RB: scheme[2], WR_TE: scheme[1], OL: scheme[8],
-				   DB: scheme[4], DL_LB: scheme[3], Other: scheme[6]}
+var color_array = {QB: '#0900FF', RB: scheme[2], WR_TE: scheme[1], OL: '#2CA3A8',
+				   DB: '#87008F', DL_LB: scheme[3], Other: '#F662FF'}
 var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 Years Approximate Value",
 					 probowls: "Pro Bowls", season: "Seasons As Starter"}	   
 var option_box
@@ -198,6 +203,14 @@ function set_up_other_plot() {
 		.attr('class', 'bar_group')
 	d3.select('.alt_plot').append('g')
 		.attr('class', 'text_group')
+		
+	// Set up line rectangle
+	d3.select('.alt_plot').append('rect')
+		.attr('x', 0)
+		.attr('y', yScale(0))
+		.attr('height', 2)
+		.attr('width', alt_width)
+		.attr('class', 'zero_line')
 	
 	visualize_alt_plot(nfl_data)
 }
@@ -243,15 +256,31 @@ function visualize_alt_plot(current_points, is_stat_change) {
 		bar_selection.enter().append('rect')
 		  .merge(bar_selection)
 			.attr('x', d => x_alt_scale(d.key))
-			.attr('y', d => yScale(d.aggregated_stat))
 			.attr('fill', d => team_color_array[d.key])
 			.attr('width', x_alt_scale.bandwidth())
-			.attr('height', d => alt_height - yScale(d.aggregated_stat))
+			.attr('y', function(d) {
+				if(yScale(d.aggregated_stat) > yScale(0)) {
+					return yScale(0)
+				} else {
+					return yScale(d.aggregated_stat)
+				}
+			})
+			.attr('height', function(d) {
+				if(yScale(d.aggregated_stat) < yScale(0)) {
+					return yScale(0) - yScale(d.aggregated_stat)
+				} else {
+					return yScale(d.aggregated_stat) - yScale(0)
+				}
+			})
 			.attr('class', 'team_bar')
 	
 	} else {
 		
 		d3.selectAll('.alt_y_axis').remove().transition(trans).attr('opacity', 0)
+		
+		d3.selectAll('.zero_line')
+			.transition(trans)
+			.attr('y', yScale(0))
 		
 		d3.select('.alt_plot').append('g')
 			.attr('opacity', 0)
@@ -264,9 +293,21 @@ function visualize_alt_plot(current_points, is_stat_change) {
 		  .merge(bar_selection)
 			.transition(trans)
 			.attr('x', d => x_alt_scale(d.key))
-			.attr('y', d => yScale(d.aggregated_stat))
+			.attr('y', function(d) {
+				if(yScale(d.aggregated_stat) > yScale(0)) {
+					return yScale(0)
+				} else {
+					return yScale(d.aggregated_stat)
+				}
+			})
+			.attr('height', function(d) {
+				if(yScale(d.aggregated_stat) < yScale(0)) {
+					return yScale(0) - yScale(d.aggregated_stat)
+				} else {
+					return yScale(d.aggregated_stat) - yScale(0)
+				}
+			})
 			.attr('width', x_alt_scale.bandwidth())
-			.attr('height', d => alt_height - yScale(d.aggregated_stat))
 			.attr('class', 'team_bar')
 		
 		d3.selectAll('.alt_y_axis_label').remove().transition(trans).attr('opacity', 0)
@@ -324,14 +365,13 @@ function aggregate_team_values(nested_data) {
 // Sets up all of the svg related things to the options box
 function set_up_options() {
 	var option_width = actual_width - main_width - 100
-	var option_height = actual_height - main_height - 40
+	var option_height = actual_height - main_height - 100
 	
 	// Set up options data
 	var positions = nfl_data.map(d => d.position).filter((v, i, a) => a.indexOf(v) === i)
 	positions.unshift('All')
 	var graph_plot = ['career_av', 'first4_av']
-	var graph_brush = ['career_av', 'first4_av', 'probowls', 'seasons']
-	option_box = [positions, graph_plot, graph_brush]
+	option_box = [positions, graph_plot]
 	
 	// Append box to the outside
 	d3.select('.options').append('rect')
@@ -352,14 +392,11 @@ function set_up_options() {
 			if(i == 0) {
 				return 'translate(0,0)'
 			} else if(i == 1) {
-				return 'translate(0,'+((3/8)*option_height)+')'
-			} else {
-				return 'translate(0,'+ ((5/8)*option_height) +')'
+				return 'translate(0,'+((3/5)*option_height)+')'
 			}
 		})
 		.attr('class', function(d,i) {
 			var names = ['options_position', 'options_stat']
-			//var names = ['options_position', 'options_stat', 'options_brush']
 			return names[i]
 		})
 	  .append('rect')
@@ -373,7 +410,6 @@ function set_up_options() {
 		.style('stroke-width', 1.5)
 	
 	// Add text to the options
-	//var option_headers = ['Position', 'Plot - Performance Metric', 'Brush - Performance Metric']
 	var option_headers = ['Position', 'Plot - Performance Metric']
 	d3.select('.options').selectAll('g').append('text')
 		.text((d,i) => option_headers[i])
@@ -394,7 +430,7 @@ function set_up_options() {
 		.paddingInner([.1])
 		.paddingOuter([.1])
 	var band_y = d3.scaleBand().domain([0,1])
-		.range([30, (3/8)*option_height-10])
+		.range([30, (3/5)*option_height-10])
 		.paddingInner([.2])
 		.paddingOuter([0])
 		
@@ -412,7 +448,6 @@ function set_up_options() {
 		.style('stroke', '#000000')
 		.attr('fill', function(d) {return color_array[d];})
 		.attr('opacity', .5)
-		//.attr('fill', 'White')
 		.style('stroke-width', 1.5)
 
 	// Text in buttons
@@ -428,22 +463,22 @@ function set_up_options() {
 	// PERFORMANCE METRIC BUTTONS
 	
 	// Adjust scales
-	band_x = d3.scaleBand().domain([0,1])
-		.range([0, option_width])
-		.paddingInner([.1])
-		.paddingOuter([.1])
+	band_x.domain([0,1])
+		
+	band_y.domain([0])
+		.range([30, (2/5)*option_height-10])
 		
 	// Set up buttons
 	d3.select('.options_stat').selectAll('boxes')
 		.data(d => d).enter().append('g')
 		.attr('class', 'stat_buttons')
 		.attr('id', d => d+'_button')
-		.attr('transform', (d,i) => 'translate('+band_x(i % 2)+','+band_y(Math.floor(i/2))+')')
+		.attr('transform', (d,i) => 'translate('+band_x(i % 2)+','+(band_y(0)-5)+')')
 	  .append('rect')
 		.attr('x', 0)
 		.attr('y', 0)
 		.attr('width', band_x.bandwidth())
-		.attr('height', ((1/4)*option_height)-40)
+		.attr('height', ((2/5)*option_height)-40)
 		.style('stroke', '#000000')
 		.attr('fill', 'White')
 		.style('stroke-width', 1.5)
@@ -453,42 +488,14 @@ function set_up_options() {
 	d3.selectAll('.stat_buttons').append('text')
 		.text((d,i) => button_names[i])
 		.attr('x', band_x.bandwidth()/2)
-		.attr('y', (((1/4)*option_height)-40)/2)
+		.attr('y', (((2/5)*option_height)-40)/2)
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'sans-serif')
 	
-	/*
-	// ALTERNATIVE PLOT BUTTONS
-	
-	// Set up buttons
-	d3.select('.options_brush').selectAll('boxes')
-		.data(d => d).enter().append('g')
-		.attr('class', 'brush_buttons')
-		.attr('id', d => d+'_brush_button')
-		.attr('transform', (d,i) => 'translate('+band_x(i % 2)+','+band_y(Math.floor(i/2))+')')
-	  .append('rect')
-		.attr('x', 0)
-		.attr('y', 0)
-		.attr('width', band_x.bandwidth())
-		.attr('height', band_y.bandwidth())
-		.style('stroke', '#000000')
-		.attr('fill', 'White')
-		.style('stroke-width', 1.5)
-	
-	// Text in buttons
-	d3.selectAll('.brush_buttons').append('text')
-		.text((d,i) => button_names[i])
-		.attr('x', band_x.bandwidth()/2)
-		.attr('y', band_y.bandwidth()/2)
-		.style('text-anchor', 'middle')
-		.style('alignment-baseline', 'central')
-		.attr('font-family', 'sans-serif')
-	*/
 	// Set up initial state of the buttons - button fill is dark grey
-	d3.select('#All_button').select('rect').attr('fill', '#999999')
+	d3.select('#All_button').select('rect').attr('fill', '#999999').attr('opacity', 1)
 	d3.select('#career_av_button').select('rect').attr('fill', '#999999')
-	//d3.select('#career_av_brush_button').select('rect').attr('fill', '#999999')
 }
 
 
@@ -504,7 +511,6 @@ function position_change(d,i,g) {
 		//d3.selectAll('.position_buttons').selectAll('rect').attr('fill', 'white')
 	//d3.select(this).select('rect').attr('fill', '#999999')
 	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', function(d) {return color_array[d];}).attr('opacity', .5)
-
 
 	if(this.id == "All_button") {
 		d3.select(this).select('rect').attr('fill', '#999999')
@@ -752,7 +758,7 @@ function brushing_context() {
 
     slider.append('text')
         .attr('x', brush_width/2)
-        .attr('y', main_height/2 - brush_height)
+        .attr('y', main_height/2 - brush_height - 10)
         .style("text-anchor", "middle")
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'arial')
