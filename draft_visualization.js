@@ -18,7 +18,7 @@ var alt_width = actual_width*(3/7)-x_pad/2, alt_height = actual_height*(3/5)
 var xScale, yScale
 var x_alt_scale
 var scheme = d3.schemeCategory10
-var color_array = {QB: '#0900FF', RB: scheme[2], WR_TE: scheme[1], OL: '#2CA3A8',
+var color_array = {All: '#999999', QB: '#0900FF', RB: scheme[2], WR_TE: scheme[1], OL: '#2CA3A8',
 				   DB: '#87008F', DL_LB: scheme[3], Other: '#F662FF'}
 var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 Years Approximate Value",
 					 probowls: "Pro Bowls", season: "Seasons As Starter"}	   
@@ -510,9 +510,6 @@ function position_change(d,i,g) {
 	//d3.select(this).select('rect').attr('fill', '#999999')
 	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', function(d) {return color_array[d];}).attr('opacity', .5)
 
-	if(this.id == "All_button") {
-		d3.select(this).select('rect').attr('fill', '#999999')
-	}
 	//d3.selectAll('.position_buttons').selectAll('rect').attr('fill', d => color_array[d.position])
 	d3.select(this).select('rect').attr('opacity', 1)
 
@@ -824,7 +821,7 @@ function pick_round() {
 		.attr('font-weight', 'bold')
 		.attr('font-family', 'sans-serif')
 		.text('Round')
-		.attr('class', 'y_axis_label')
+		
 	// initial state of button
 	d3.select('#All_round').select('rect').attr('fill', '#999999')
 }
