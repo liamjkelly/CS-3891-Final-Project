@@ -2,9 +2,6 @@
 // - Brush y-axis label needs to change on stat_change()
 // - Aggregate point in brush not changing in First4AV
 // - Different color for 'Other'
-// - There is inconsistencies in points that has to do with the max/min of a given round for a given brush
-//   try selecting a more recent set of years and then adding older years for a late round, not sure why
-//   this is happening or how to fix it
 
 // NOT SUPER IMPORTANT FIXME:
 // - A couple names don't fit in hover box - no one will know unless he selects Dominique Rodgers-Cromartie
@@ -857,7 +854,7 @@ function round_change() {
 	new_data = new_data.filter(slider_filter)
 
 	// change axis and visualize data
-	update_x_axis(new_data)
+	update_x_axis(brush_data)
 	visualize_new(new_data)
 }
 
@@ -865,6 +862,7 @@ function update_x_axis(new_data) {
 	// Set up Scales
     var minX = d3.min(new_data, d => d.pick)
     var maxX = d3.max(new_data, d => d.pick)
+	
 	xScale = d3.scaleLinear().domain([minX-2, maxX+2]).range([0, main_width])
 
 	d3.selectAll('.x_axis').remove().transition(trans).attr('opacity', 0)
