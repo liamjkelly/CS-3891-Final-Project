@@ -812,6 +812,15 @@ function pick_round() {
 		.style('alignment-baseline', 'central')
 		.attr('font-family', 'sans-serif')	
 
+	d3.select('.rounds').append("text")
+		.attr('y', ((round_height)/2+5))
+		.attr('x', -((round_height)/2+5))
+		.style("text-anchor", "middle")
+		.style('font-size', '16px')
+		.attr('font-weight', 'bold')
+		.attr('font-family', 'sans-serif')
+		.text('Round')
+		.attr('class', 'y_axis_label')
 	// initial state of button
 	d3.select('#All_round').select('rect').attr('fill', '#999999')
 }
