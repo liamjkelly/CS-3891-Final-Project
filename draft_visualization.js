@@ -815,6 +815,7 @@ function brushing_context() {
 
 	var line_scale = d3.line().x(d => x_date(d.year)).y(d => y_scale(d.career_av))
 
+	// some of the attributes taken from here: https://beta.observablehq.com/@mbostock/d3-line-chart
 	var dotslider = slider.append('g').attr('class', 'year_points');
 	dotslider.selectAll('points')
 	.data(year_data)
