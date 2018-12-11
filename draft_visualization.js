@@ -35,6 +35,8 @@ var team_color_array = {ARI: '#97233F', ATL: '#A71930', BAL: '#241773', BUF: '#0
 		PIT: '#FFB612', SDG: '#002A5E', SEA: '#002244', SFO: '#AA0000', STL: '#002244',
 		TAM: '#D50A0A', TEN: '#002A5C', WAS: '#773141'}
 
+var background_color = '#E5E5E5'
+
 var cached_stat = 'career_av'
 var cached_brush = 'career_av'
 var cached_data
@@ -72,8 +74,8 @@ function plot_it() {
 	d3.select('.mainplot').append('rect').attr('class', 'bkgd')
 		.attr('width', main_width)
 		.attr('height', main_height)
-		.attr('fill', '#999999')
-		.attr('opacity', .4);
+		.attr('fill', background_color)
+		.attr('opacity', 0.4);
 	d3.select('.mainview').append('g').attr('class', 'legend')
 		.attr('transform', 'translate('+(main_width+10)+',0)');
 	//d3.select('.mainview').append('g').attr('class', 'brush')
@@ -124,8 +126,8 @@ function plot_it() {
 		.attr('r', 3)
 		.attr('cx', d => xScale(d.pick))
 		.attr('cy', d => yScale(d.career_av))
-		.attr('fill', d => color_array[d.position])
-		.style('opacity', .5)
+		.attr('fill', '#999999')
+		.style('opacity', .7)
     
 	// Plot the Text
     d3.select('.mainplot').append("text")
@@ -192,7 +194,7 @@ function set_up_other_plot() {
 		.attr('y', 0)
 		.attr('width', alt_width)
 		.attr('height', alt_height)
-		.attr('fill', '#999999')
+		.attr('fill', background_color)
 		.attr('opacity', .4)
 	
 	// Set up the y-axis
@@ -542,7 +544,7 @@ function position_change(d,i,g) {
 // Fills the points with colors based on the selected position
 function fill_points(d) {
 	if(cached_pos == 'All') {
-		return color_array[d.position]
+		return color_array[cached_pos]
 	} else if(d.position != cached_pos) {
 		return unviewed_color
 	} else {
@@ -811,17 +813,25 @@ function brushing_context() {
 	//var y_scale = d3.scaleLinear().domain([min_year_Avg, max_year_Avg]).range([brush_height, 0])
 	y_scale.range([brush_height, 0])
 
+	var line_scale = d3.line().x(d => x_date(d.year)).y(d => y_scale(d.career_av))
+
 	var dotslider = slider.append('g').attr('class', 'year_points');
 	dotslider.selectAll('points')
 	.data(year_data)
-	.enter().append('circle')
+	.enter().append('path')
 	.attr('class', 'dotslider')
-	.attr('r', 3)
+	.attr('d', d => line_scale(year_data))
+	.attr('fill', 'none')
+    .attr('stroke', '#737373')
+    .attr('stroke-width', 1.5)
+    .attr('stroke-linejoin', 'round')
+    .attr('stroke-linecap', 'round')
+	/*.attr('r', 3)
 	//.style('opacity', .5)
 	.attr("cx", function (d) {
             return x_date(d.year);})
     .attr("cy", function (d) {
-           return y_scale(d.career_av);})
+           return y_scale(d.career_av);})*/
 
 
 
@@ -1014,7 +1024,7 @@ function visualize_new(new_data) {
 		.attr('cx', d => xScale(d.pick))
 		.attr('cy', d => yScale(d[cached_stat]))
 		.attr('fill', fill_points)
-		.style('opacity', .5)
+		.style('opacity', .7)
 		.attr('id', 'viewed')
 		
 	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
