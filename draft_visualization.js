@@ -158,9 +158,6 @@ function plot_it() {
 
 	// hover interaction
 	d3.selectAll('.points').on('mouseover', hover_over).on('mouseout', hover_out)
-	
-	d3.selectAll('.team_bars').on('click', d => console.log(d))
-	
 }
 
 
