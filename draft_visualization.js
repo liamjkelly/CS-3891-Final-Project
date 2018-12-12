@@ -1,12 +1,9 @@
-// FIXME:
-// - Brush y-axis label needs to change on stat_change()
-// - Different color for 'Other'
-
 // NOT SUPER IMPORTANT FIXME:
-// - A couple names don't fit in hover box - no one will know unless he selects Dominique Rodgers-Cromartie
 // - Flickering when you hover over certain points - has to do with box being located over points,
 //   box also goes out of plot sometimes
-// - Add different stats to hover over box?
+// - points are behind other points? maybe need some kind of data join where we reenter whatever points are highlighted so they are in front
+// - Maybe add some sort of brushing? Maybe show some kind of link between players
+//   and the part of the bar graph they are responsible for?
 
 var width = 1500, height = 750;
 var x_pad = 60, y_pad = 20;
@@ -14,19 +11,22 @@ var actual_width = width-2*x_pad, actual_height = height-2*y_pad
 var main_width = actual_width*(4/7), main_height = actual_height*(3/5)
 var alt_width = actual_width*(3/7)-x_pad/2, alt_height = actual_height*(3/5)
 
-var xScale, yScale
+var brush_width = main_width;
+var brush_height = main_height / 5;
+
+var xScale, yScale, line_scale
 var x_alt_scale
 var scheme = d3.schemeCategory10
 var color_array = {All: '#999999', QB: '#0900FF', RB: scheme[2], WR_TE: scheme[1], OL: '#2CA3A8',
-				   DB: '#87008F', DL_LB: scheme[3], Other: '#F662FF'}
-var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 Years Approximate Value",
-					 probowls: "Pro Bowls", season: "Seasons As Starter"}	   
+				   DB: '#87008F', DL_LB: scheme[3], Other: '#6C4121'}
+var y_label_array = {career_av: "Career Approximate Value", first4_av: "First 4 Years Approximate Value"}	   
 
-var y_label_array_aggregated = {career_av: "Career Average", first4_av: "First 4 Years Average", 
-probowls: "Pro Bowls", season: "Seasons As Starter"}
+var y_label_array_aggregated = {career_av: "Career Average", first4_av: "First 4 Years Average"}
+var stat_array = {career_av: "Career AV", first4_av: "First4 AV"}
 
 var option_box
 
+var team_names = []
 var team_color_array = {ARI: '#97233F', ATL: '#A71930', BAL: '#241773', BUF: '#00338D',
 		CAR: '#0085CA', CHI: '#0B162A', CIN: '#FB4F14', CLE: '#EC5614', DAL: '#041E42',
 		DEN: '#002244', DET: '#0076B6', GNB: '#203731', HOU: '#03202F', IND: '#002C5F',
@@ -52,7 +52,8 @@ var unviewed_color = '#C0C0C0'
 var trans = d3.transition().duration(2000)
 
 var brushing, date1, date2, min_year, max_year, handle, handle1, handle2, x_date, aggregated_data
-var y_scale, min_year_Avg, max_year_Avg, global_id, global_stat, year_data, brush_height
+var y_scale, min_year_Avg, max_year_Avg, global_id, year_data, brush_height
+var global_stat = 'career_av'
 
 function filter_data(d) {
 	d.pick = +d.pick
@@ -98,16 +99,16 @@ function plot_it() {
 
     date1 = min_year;
     date2 = max_year;
-    
+	
     xScale = d3.scaleLinear().domain([minX-2, maxX+2]).range([0, main_width]);
     yScale = d3.scaleLinear().domain([minY-2, maxY+2]).range([main_height, 0]);
 
     aggregate_year(nfl_data)
 
-
     var min_year_Avg = Math.min.apply(Math, year_data.map(function(d) {return d.career_av; }))
     var max_year_Avg = Math.max.apply(Math, year_data.map(function(d) {return d.career_av; }))
-    y_scale = d3.scaleLinear().domain([min_year_Avg, max_year_Avg])
+    y_scale = d3.scaleLinear().domain([min_year_Avg-2, max_year_Avg+2])
+	
 	
 	// Plot the Axes
     d3.select('.mainplot').append('g')
@@ -168,8 +169,6 @@ function plot_it() {
 	d3.selectAll('.position_buttons').on('click', position_change)
 	
 	d3.selectAll('.stat_buttons').on('click', stat_change)
-	
-	d3.selectAll('.brush_buttons').on('click', brush_stat_change)
 
 	d3.selectAll('.round_buttons').on('click', round_change)
 
@@ -208,7 +207,7 @@ function set_up_other_plot() {
 		.style('font-size', '18px')
 		.attr('font-weight', 'bold')
 		.attr('font-family', 'sans-serif')
-		.text(d => y_label_array[cached_brush])
+		.text(d => y_label_array[cached_brush] + " per Team")
 		.attr('class', 'alt_y_axis_label')
 	
 	d3.select('.alt_plot').append('g')
@@ -223,6 +222,24 @@ function set_up_other_plot() {
 		.attr('height', 2)
 		.attr('width', alt_width)
 		.attr('class', 'zero_line')
+		
+	// Nest the data on team
+	var team_data = d3.nest()
+		.key(d => d.team)
+		.entries(nfl_data)
+		
+	// Get the team names
+	for(var i = 0; i < team_data.length; i++) {
+		team_names.push(team_data[i].key)
+	}
+	team_names = team_names.sort()
+	
+	// Set up the x scale
+	x_alt_scale = d3.scaleBand()
+		.domain(team_names)
+		.range([0, alt_width])
+		.paddingInner([.1])
+		.paddingOuter([.1])
 	
 	visualize_alt_plot(nfl_data)
 }
@@ -241,20 +258,6 @@ function visualize_alt_plot(current_points, is_stat_change) {
 	
 	// Aggregate team values
 	aggregate_team_values(team_data)
-	
-	// Get the team names
-	var team_names = []
-	for(var i = 0; i < team_data.length; i++) {
-		team_names.push(team_data[i].key)
-	}
-	team_names = team_names.sort()
-	
-	// Set up the x scale
-	x_alt_scale = d3.scaleBand()
-		.domain(team_names)
-		.range([0, alt_width])
-		.paddingInner([.1])
-		.paddingOuter([.1])
 	
 	//Set up the bar graph
 	var bar_selection = d3.select('.bar_group').selectAll('rect')
@@ -327,7 +330,7 @@ function visualize_alt_plot(current_points, is_stat_change) {
 		d3.select('.alt_plot').append('text')
 			.attr('opacity', 0)
 			.attr('class', 'alt_y_axis_label')
-			.text(y_label_array[cached_stat])
+			.text(y_label_array[cached_stat] + " per Team")
 			.attr("transform", "rotate(-90)")
 			.attr('y', -35)
 			.attr('x', -main_height/2)
@@ -342,14 +345,10 @@ function visualize_alt_plot(current_points, is_stat_change) {
 	
 	// Set up text under bars
 	var text_selection = d3.select('.text_group').selectAll('.team_text')
-		.data(team_data, d => d.key)
-		
-	text_selection.exit().remove()
-	
-	text_selection.enter().append('text')
-	  .merge(text_selection)
-		.attr("transform", d => 'translate('+(x_alt_scale(d.key)+x_alt_scale.bandwidth()/2)+','+(alt_height+15)+')rotate(-45)')
-		.text(d => d.key)
+		.data(team_names)
+		.enter().append('text')
+		.attr("transform", d => 'translate('+(x_alt_scale(d)+x_alt_scale.bandwidth()/2)+','+(alt_height+15)+')rotate(-45)')
+		.text(d => d)
 		.attr('x', 0)
 		.attr('y', 0)
 		.attr('class', 'team_text')
@@ -524,7 +523,6 @@ function position_change(d,i,g) {
 	//d3.select(this).select('rect').attr('fill', '#999999')
 	d3.selectAll('.position_buttons').selectAll('rect').attr('fill', function(d) {return color_array[d];}).attr('opacity', .5)
 
-	//d3.selectAll('.position_buttons').selectAll('rect').attr('fill', d => color_array[d.position])
 	d3.select(this).select('rect').attr('opacity', 1)
 
 	var id = d3.select(this).attr('id')
@@ -532,6 +530,7 @@ function position_change(d,i,g) {
 
 	cached_pos = pos
 	
+	cached_data
 	d3.selectAll('.points')
 		.attr('fill', fill_points)
 		
@@ -628,76 +627,72 @@ function stat_change(d,i,g) {
 
 // Does the interactions for the brush stat changing
 function brush_stat_change(d,i) {
-	
-
-
-	if(global_id == "first4_av_button") {
-		aggregate_year_first4(nfl_data)
+	if(global_stat == "first4_av") {
+		aggregate_year_first4(brush_data)
 		//stat = id.slice(0, -7)
 	}
-	if(global_id == "career_av_button") {
-		aggregate_year(nfl_data)
+	
+	if(global_stat == "career_av") {
+		aggregate_year(brush_data)
 		//stat = id.slice(0, -7)
 	}
-
 	
-
 	//var id = d3.select(this).attr('id')
 	//var stat = id.slice(0, -7)
 
-
 	//if(stat != cached_stat) {
 	//	cached_stat = stat
-		// update scale and axis
-		var min_stat_brush = d3.min(year_data, d => d[global_stat])
-		var max_stat_brush = d3.max(year_data, d => d[global_stat])
-		
-		y_scale.domain([min_stat_brush-2, max_stat_brush+2])
-		
-		//d3.selectAll('.y_axis_label').remove().transition(trans).attr('opacity', 0)
-		
-		
-		d3.select('.slider').append('text')
-			.attr('opacity', 0)
-			.attr('class', 'y_axis_label')
-			.text(y_label_array_aggregated[global_stat])
-			.attr("transform", "rotate(-90)")
-			.attr('y', -35)
-			.attr('x', -(brush_height)/2)
-			.style("text-anchor", "middle")
-			.style('font-size', '12px')
-			.attr('font-weight', 'bold')
-			.attr('font-family', 'sans-serif')
-		  .transition(trans)
-			.attr('opacity', 1)
+	// update scale and axis
+	var min_stat_brush = d3.min(year_data, d => d[global_stat])
+	var max_stat_brush = d3.max(year_data, d => d[global_stat])
 
+	
+	y_scale.domain([min_stat_brush-2, max_stat_brush+2])
+	line_scale.y(d => y_scale(d[global_stat]))
+	
+	console.log(year_data)
+	
+	//d3.selectAll('.y_axis_label').remove().transition(trans).attr('opacity', 0)
+	
+	// --------
+	d3.selectAll('.slider_y_axis_label').remove().transition(trans).attr('opacity', 0)
+	
+	d3.select('.slider').append('text')
+		.attr('opacity', 0)
+		.attr('class', 'slider_y_axis_label')
+		.text(y_label_array_aggregated[global_stat])
+		.attr("transform", "rotate(-90)")
+		.attr('y', -30)
+		.attr('x', -brush_height/2)
+		.style("text-anchor", "middle")
+		.style('font-size', '12px')
+		.attr('font-weight', 'bold')
+		.attr('font-family', 'sans-serif')
+	  .transition(trans)
+		.attr('opacity', 1)
 
-		var yearpoints = d3.select('.year_points')
-		.selectAll('circle').data(year_data, d => d[global_stat])
+	var yearpoints = d3.select('.year_points').selectAll('.dotslider')
+		.data(year_data, d => d[global_stat])
 
+	yearpoints.exit().transition(trans)
+		.attr('d', d => line_scale(year_data)).remove()
 
-
-		yearpoints.exit().remove()
-
-	yearpoints.enter().append('circle')
+	yearpoints.enter().append('path')
 	  .merge(yearpoints)
-		.attr('class', 'points')
-		.attr('r', 3)
-		.attr('cx', d => x_date(d.year))
-		.attr('cy', d => y_scale(d[global_stat]))
-		//.style('opacity', .5)
-
-	
-
-
-
-
+		.attr('class', 'dotslider')
+		.attr('fill', 'none')
+		.attr('stroke', '#737373')
+		.attr('stroke-width', 1.5)
+		.attr('stroke-linejoin', 'round')
+		.attr('stroke-linecap', 'round')
+		.attr('opacity', 0)
+	  .transition(trans)
+	    .attr('d', d => line_scale(year_data))
+	  .transition()
+	    .duration(0)
+	    .attr('opacity', 1)
 }
 
-// Updates the brush for when there is a position or stat change
-function update_brush() {
-	
-}
 
 // When a point is hovered over, gives information about the player such as
 // Name, Position, Pick Number, Year, Team
@@ -732,6 +727,8 @@ function hover_over(d,i,g) {
 		// .transition().duration(50)
 		.attr('opacity', 0.8)
 
+	var other_stat = cached_stat == 'career_av' ? 'first4_av' : 'career_av'
+		
 	// text inside rectangle
 	var text = d3.select('.hover_box').append('text')
 		.append('tspan')
@@ -758,7 +755,7 @@ function hover_over(d,i,g) {
 		.style('text-anchor', 'middle')
 		.style('alignment-baseline', 'central')
 		.append('tspan')
-		.text(cached_stat + ': ' + d[cached_stat])
+		.text(stat_array[other_stat] + ': ' + d[other_stat])
 		.attr('font-size', '12px')
 		.attr('font-family', 'sans-serif')
 		.attr('x', 15)
@@ -787,10 +784,6 @@ function hover_out(d,i,g) {
 }
 
 function brushing_context() {
-
-	var brush_width = main_width;
-	var brush_height = main_height / 5;
-
 	x_date = d3.scaleLinear().domain([min_year, max_year]).range([0, brush_width]).clamp(true)
 	
 
@@ -810,44 +803,37 @@ function brushing_context() {
 	//var y_scale = d3.scaleLinear().domain([min_year_Avg, max_year_Avg]).range([brush_height, 0])
 	y_scale.range([brush_height, 0])
 
-	var line_scale = d3.line().x(d => x_date(d.year)).y(d => y_scale(d.career_av))
+	line_scale = d3.line().x(d => x_date(d.year)).y(d => y_scale(d.career_av))
 
 	// some of the attributes taken from here: https://beta.observablehq.com/@mbostock/d3-line-chart
 	var dotslider = slider.append('g').attr('class', 'year_points');
 	dotslider.selectAll('points')
-	.data(year_data)
-	.enter().append('path')
-	.attr('class', 'dotslider')
-	.attr('d', d => line_scale(year_data))
-	.attr('fill', 'none')
-    .attr('stroke', '#737373')
-    .attr('stroke-width', 1.5)
-    .attr('stroke-linejoin', 'round')
-    .attr('stroke-linecap', 'round')
-	/*.attr('r', 3)
-	//.style('opacity', .5)
-	.attr("cx", function (d) {
-            return x_date(d.year);})
-    .attr("cy", function (d) {
-           return y_scale(d.career_av);})*/
-
-
+		.data(year_data)
+		.enter().append('path')
+		.attr('class', 'dotslider')
+		.attr('d', d => line_scale(year_data))
+		.attr('fill', 'none')
+		.attr('stroke', '#737373')
+		.attr('stroke-width', 1.5)
+		.attr('stroke-linejoin', 'round')
+		.attr('stroke-linecap', 'round')
 
     slider.append("g")
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + brush_height + ")")
         .call(x_axis2)
 
+	// --------
     slider.append("text")
 		.attr("transform", "rotate(-90)")
-		.attr('y', -35)
+		.attr('y', -30)
 		.attr('x', -(brush_height)/2)
 		.style("text-anchor", "middle")
 		.style('font-size', '12px')
 		.attr('font-weight', 'bold')
 		.attr('font-family', 'sans-serif')
 		.text('Average Career')
-		.attr('class', 'y_axis_label')
+		.attr('class', 'slider_y_axis_label')
 
     slider.append('text')
         .attr('x', brush_width/2)
@@ -950,6 +936,7 @@ function round_change() {
 
 	// change axis and visualize data
 	update_x_axis(brush_data)
+	brush_stat_change()
 	visualize_new(new_data)
 }
 
@@ -972,18 +959,15 @@ function update_x_axis(new_data) {
 }
 
 function aggregate_year(data) {
-	
-
 	year_data = d3.nest()
 		.key(function(d) { return d.year; })
-		.rollup(function(v) { return d3.sum(v, function(d) {return d.career_av; }); })
+		.rollup(function(v) { return d3.mean(v, function(d) {return d.career_av; }); })
 		.entries(data);
 
 	year_data.forEach(function(d) {
 		d.year = d.key;
 		d.career_av = d.value;
 	});
-
 }
 
 
@@ -993,7 +977,7 @@ function aggregate_year_first4(data) {
 
 	year_data = d3.nest()
 		.key(function(d) { return d.year; })
-		.rollup(function(v) { return d3.sum(v, function(d) {return d.first4_av; }); })
+		.rollup(function(v) { return d3.mean(v, function(d) {return d.first4_av; }); })
 		.entries(data);
 
 	year_data.forEach(function(d) {
