@@ -1,6 +1,12 @@
+/*
+* How Draft Pick Relates to NFL Success
+* Joe Derose, Liam Kelly, Rebecca Wood
+* CS 3891 -- Introduction to Visualization
+* Fall 2018
+*/
+
+
 // NOT SUPER IMPORTANT FIXME:
-// - Flickering when you hover over certain points - has to do with box being located over points,
-//   box also goes out of plot sometimes
 // - points are behind other points? maybe need some kind of data join where we reenter whatever points are highlighted so they are in front
 // - Maybe add some sort of brushing? Maybe show some kind of link between players
 //   and the part of the bar graph they are responsible for?
@@ -783,6 +789,7 @@ function hover_out(d,i,g) {
 	box.remove()
 }
 
+// this is derived from https://bl.ocks.org/mbostock/34f08d5e11952a80609169b7917d4172
 function brushing_context() {
 	x_date = d3.scaleLinear().domain([min_year, max_year]).range([0, brush_width]).clamp(true)
 	
@@ -796,11 +803,6 @@ function brushing_context() {
 	.attr('transform', 'translate(0,'+ (main_height+45) +')')
 
 
-	//aggregate_year(nfl_data)
-
-	//var min_year_Avg = Math.min.apply(Math, year_data.map(function(d) {return d.career_av; }))
-    //var max_year_Avg = Math.max.apply(Math, year_data.map(function(d) {return d.career_av; }))
-	//var y_scale = d3.scaleLinear().domain([min_year_Avg, max_year_Avg]).range([brush_height, 0])
 	y_scale.range([brush_height, 0])
 
 	line_scale = d3.line().x(d => x_date(d.year)).y(d => y_scale(d.career_av))
@@ -910,6 +912,7 @@ function pick_round() {
 	d3.select('#All_round').select('rect').attr('fill', '#999999')
 }
 
+// called when round buttons are clicked
 function round_change() {
 	// Highlight the new button
 	d3.selectAll('.round_buttons').selectAll('rect').attr('fill', 'white')
@@ -940,6 +943,7 @@ function round_change() {
 	visualize_new(new_data)
 }
 
+// updates the x axis for change of round
 function update_x_axis(new_data) {
 	// Set up Scales
     var minX = d3.min(new_data, d => d.pick)
@@ -958,6 +962,7 @@ function update_x_axis(new_data) {
 		.call(d3.axisBottom(xScale))
 }
 
+// aggregates year data based on career average
 function aggregate_year(data) {
 	year_data = d3.nest()
 		.key(function(d) { return d.year; })
@@ -971,6 +976,7 @@ function aggregate_year(data) {
 }
 
 
+// aggregates year data based on first four years
 function aggregate_year_first4(data) {
 	
 
@@ -1016,6 +1022,7 @@ function visualize_new(new_data) {
 	visualize_alt_plot(cached_data, false)
 }
 
+// brushed function for the year slider
 function brushed() {
     var selection = d3.event.selection;
 	if (selection !== null) {
@@ -1030,6 +1037,7 @@ function brushed() {
 	}
 }
 
+// filter the years
 function slider_filter(elem) {
 	if(date1 <= elem.year && elem.year <= date2)
 		return elem;
